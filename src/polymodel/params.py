@@ -7,7 +7,7 @@ class Constants:
         Economic params, running params, setup etc
         """
 
-        consts = pd.read_csv('../data/03_model_inputs/constants.csv')
+        consts = pd.read_csv('../data/constants.csv')
 
         self.wheat_price = float(
             consts[consts['Parameter'] == 'Price of wheat'].Value

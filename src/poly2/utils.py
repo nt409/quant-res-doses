@@ -19,8 +19,8 @@ from scipy.optimize import minimize
 from scipy.integrate import ode
 from scipy import signal
 
-from polymodel.consts import DEFAULT_I0, FUNG_DECAY_RATE
-from polymodel.params import PARAMS
+from poly2.consts import DEFAULT_I0, FUNG_DECAY_RATE
+from poly2.params import PARAMS
 
 # ------------------------------------------------------------
 # create logger with 'poly'

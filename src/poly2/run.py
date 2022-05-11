@@ -11,10 +11,10 @@ import numpy as np
 from joblib import Memory
 from tqdm import tqdm
 
-from polymodel.params import PARAMS
-from polymodel.simulator import Simulator
-from polymodel.utils import (config_str_to_log, keys_from_config,
-                             run_logger, yield_function)
+from poly2.params import PARAMS
+from poly2.simulator import Simulator
+from poly2.utils import (config_str_to_log, keys_from_config,
+                         run_logger, yield_function)
 
 memory = Memory('../joblib_cache/', verbose=1)
 

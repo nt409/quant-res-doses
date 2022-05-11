@@ -5,7 +5,7 @@ This file sets up the parameters for the polygenic model
 import numpy as np
 import pandas as pd
 
-from polymodel.consts import ALL_BETAS, DEFAULT_BETA, DEFAULT_I0
+from poly2.consts import ALL_BETAS, DEFAULT_BETA, DEFAULT_I0
 
 
 # * TOC

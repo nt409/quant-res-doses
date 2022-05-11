@@ -5,8 +5,8 @@ from scipy import signal
 from scipy.integrate import ode
 from scipy.stats import norm
 
-from polymodel.params import PARAMS
-from polymodel.utils import (
+from poly2.params import PARAMS
+from poly2.utils import (
     Fungicide,
     economic_yield_function,
     get_host_dist_params,

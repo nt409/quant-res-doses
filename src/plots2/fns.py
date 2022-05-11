@@ -8,9 +8,9 @@ import statistics
 import itertools
 from PIL import ImageColor
 
-from polymodel.utils import edge_values, get_dist_mean, trait_vec, trait_vec
+from poly2.utils import edge_values, get_dist_mean, trait_vec, trait_vec
 
-from plots.consts import (
+from plots2.consts import (
     GREY_LABEL,
     LIGHT_GREY_TEXT,
     PLOT_HEIGHT,
@@ -22,7 +22,7 @@ from plots.consts import (
     FILL_OPACITY
 )
 
-from polymodel.params import PARAMS
+from poly2.params import PARAMS
 
 
 # --------------------------------------------------------------------

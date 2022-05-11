@@ -1,6 +1,3 @@
-import plotly.graph_objects as go
-
-
 MARKER_COLOURS = [
     'rgb(50,50,50)',  # 'black',
     'rgb(255,0,0)',  # 'red',

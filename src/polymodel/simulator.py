@@ -475,27 +475,15 @@ class Simulator:
         # add other params
         my_fungicide = Fungicide(num_sprays)
 
-        if self.config.host_growth:
-            host_growth_fn = host_growth_function
-        # else:
-            # host_growth_fn = self._constant_host_function
+        host_growth_fn = host_growth_function
 
-        if self.config.mutation_on:
-            ode_solver.set_f_params(
-                beta_in,
-                host_growth_fn,
-                strains_dict,
-                my_fungicide,
-                self.mutation_array
-            )
-
-        else:
-            ode_solver.set_f_params(
-                beta_in,
-                host_growth_fn,
-                strains_dict,
-                my_fungicide
-            )
+        ode_solver.set_f_params(
+            beta_in,
+            host_growth_fn,
+            strains_dict,
+            my_fungicide,
+            self.mutation_array
+        )
 
         for ind, tt in enumerate(t_out[1:]):
             if ode_solver.successful():

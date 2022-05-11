@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.gitattributes": true,
+      "*/*.egg-info": true,
+      "**/pyproject.toml": true,
+      "**/setup.cfg": true,
+      "**/joblib_cache/": true,
+      "**/logs/": true
+    }
+  }
+}

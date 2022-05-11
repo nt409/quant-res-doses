@@ -214,10 +214,9 @@ class Simulator:
 
             dis_sev[yr] = total_I[-1, yr]
 
-            if self.config.host_growth:
-                # scale so proportion of final leaf size
-                S_end = sol_list[-1, -1, yr]
-                dis_sev[yr] = dis_sev[yr] / (dis_sev[yr] + S_end)
+            # scale so proportion of final leaf size
+            S_end = sol_list[-1, -1, yr]
+            dis_sev[yr] = dis_sev[yr] / (dis_sev[yr] + S_end)
 
             if (replace_cultivar_array is not None
                     and replace_cultivar_array[yr]):
@@ -250,10 +249,7 @@ class Simulator:
 
     def calculate_ode_soln(self, D0_k, D0_l, I0_in, beta_in, num_sprays):
 
-        # only reduce in the non mutation case
-        will_reduce = not self.config.mutation_on
-
-        self._reduce_box_numbers(D0_k, D0_l, will_reduce)
+        # self._reduce_box_numbers(D0_k, D0_l, will_reduce)
 
         self._get_y0(I0_in, D0_l, D0_k)
 
@@ -267,37 +263,6 @@ class Simulator:
         total_infection = np.asarray(total_infection)
 
         return solution, solutiont, fung_dist_out, host_dist_out, total_infection
-
-    def _ode_system_no_mutation(
-        self,
-        t,
-        y,
-        beta,
-        host_growth_fn,
-        strains_dict,
-        fungicide
-    ):
-        dydt = np.zeros(len(self.y0))
-
-        ##
-        S = y[-1]
-
-        # host effect is same as value of strain
-        host_effect_vec = np.array(strains_dict['host'])
-
-        # fung effect is value of strain into fungicide effect function,
-        # which depends on dose
-        fung_effect_vec = np.array([
-            fungicide.effect(strain, t) for strain in strains_dict['fung']
-        ])
-
-        disease_states = host_effect_vec * fung_effect_vec * np.array(y[:-1])
-
-        dydt[:-1] = beta * S * disease_states
-
-        dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states)
-
-        return dydt
 
     def _ode_system_with_mutation(
             self,
@@ -334,61 +299,6 @@ class Simulator:
 
         return dydt
 
-    # def _constant_host_function(self, t, S, y):
-        # return 0
-
-    def _reduce_box_numbers(self, D0_k, D0_l, will_reduce):
-        """
-        Speeds up solver by only using minimal number of boxes 
-        (ignoring ones of negligible density).
-
-        Host has start truncated, so we take host_vec[l_start:]
-
-        Fungicide has end truncated, so we take fung_vec[:k_len]
-        """
-
-        # 10**(-16) led to floating point errors - accepting boxes that should
-        # have been less than 10**(-16)
-        SMALLEST_DENSITY = 1.1e-16
-
-        self.k_start = self._boxes_to_include(
-            will_reduce,
-            D0_k,
-            SMALLEST_DENSITY,
-        )
-
-        self.k_len = self.n_k - self.k_start
-
-        self.l_start = self._boxes_to_include(
-            will_reduce,
-            D0_l,
-            SMALLEST_DENSITY,
-        )
-
-        self.l_len = self.n_l - self.l_start
-
-    def _boxes_to_include(self,
-                          will_reduce,
-                          dist,
-                          smallest_density) -> int:
-        """
-        This function allows solver to ignore the highly sensitive 
-        (non-resistant) boxes if they have tiny density, since they will not
-        grow stronger, whereas resistant boxes could.
-
-        Don't use with mutation!
-        """
-
-        non_negligible = np.asarray(np.argwhere(dist > smallest_density))
-
-        if will_reduce and len(non_negligible) > 0:
-            out = max(0, floor(0.8*min(non_negligible)))
-
-        else:
-            out = 0
-
-        return int(out)
-
     def _get_y0(self, I0_in, D0_l, D0_k):
         """
         y0 different if we have two active traits vs one
@@ -398,46 +308,28 @@ class Simulator:
 
         # set initial condition
         if self.host_plant_on and self.fungicide_on:
-            y0_use = np.zeros(self.k_len*self.l_len+1)
+            y0_use = np.zeros(self.n_k*self.n_l+1)
 
             infection_array = (
-                I0_in * np.outer(D0_k[self.k_start:], D0_l[self.l_start:])
+                I0_in * np.outer(D0_k, D0_l)
             )
 
             infection_vector = np.reshape(
                 infection_array,
-                (self.k_len*self.l_len)
+                (self.n_k*self.n_l)
             )
 
             y0_use[:-1] = infection_vector
 
         elif self.fungicide_on and not self.host_plant_on:
-            y0_use = np.zeros(self.k_len+1)
-            y0_use[:-1] = I0_in*D0_k[self.k_start:]
+            y0_use = np.zeros(self.n_k+1)
+            y0_use[:-1] = I0_in*D0_k
 
         elif self.host_plant_on and not self.fungicide_on:
-            y0_use = np.zeros(self.l_len+1)
-            y0_use[:-1] = I0_in*D0_l[self.l_start:]
+            y0_use = np.zeros(self.n_l+1)
+            y0_use[:-1] = I0_in*D0_l
 
         y0_use[-1] = S0_prop
-
-        # USE HOBBELEN PARAMETERISATION - START AT 0.05 / 4.1 at 1456
-        # NB HOBB have carrying capacity 4.1 not 4.2 as in James
-
-        # if self.config.host_growth:
-        #     # from solving dA/dt = r( 1- A );
-        #     # assuming negligible infection before 1456?
-
-        #     A_0 = (
-        #         1 -
-        #         (1 - PARAMS.host_growth_initial_area) *
-        #         exp(- PARAMS.host_growth_rate * (PARAMS.T_1 - 1212))
-        #     )
-
-        #     y0_use = A_0*y0_unscaled
-
-        # else:
-        #     y0_use = y0_unscaled
 
         self.y0 = PARAMS.host_growth_initial_area*y0_use
 
@@ -459,36 +351,34 @@ class Simulator:
 
         if self.fungicide_on and self.host_plant_on:
             mutate_array = np.zeros(
-                (self.k_len*self.l_len,
-                 self.k_len*self.l_len)
+                (self.n_k*self.n_l,
+                 self.n_k*self.n_l)
             )
 
-            fung_ker = self.fung_kernel[self.k_start:, self.k_start:]
-            host_ker = self.host_kernel[self.l_start:, self.l_start:]
+            fung_ker = self.fung_kernel
+            host_ker = self.host_kernel
 
             for i in range(mutate_array.shape[0]):
                 for j in range(mutate_array.shape[1]):
-                    # convert to "fung index" in [0,self.k_len-1]
-                    f1 = floor(i/self.l_len)
-                    # convert to "fung index" in [0,self.k_len-1]
-                    f2 = floor(j/self.l_len)
+                    # convert to "fung index" in [0,self.n_k-1]
+                    f1 = floor(i/self.n_l)
+                    # convert to "fung index" in [0,self.n_k-1]
+                    f2 = floor(j/self.n_l)
 
-                    # convert to "host index" in [0,self.l_len-1]
-                    h1 = i % self.l_len
-                    # convert to "host index" in [0,self.l_len-1]
-                    h2 = j % self.l_len
+                    # convert to "host index" in [0,self.n_l-1]
+                    h1 = i % self.n_l
+                    # convert to "host index" in [0,self.n_l-1]
+                    h2 = j % self.n_l
 
                     mutate_array[i, j] = fung_ker[f1, f2] * host_ker[h1, h2]
 
             self.mutation_array = mutate_array
 
         elif self.fungicide_on and not self.host_plant_on:
-            self.mutation_array = self.fung_kernel[self.k_start:,
-                                                   self.k_start:]
+            self.mutation_array = self.fung_kernel
 
         elif not self.fungicide_on and self.host_plant_on:
-            self.mutation_array = self.host_kernel[self.l_start:,
-                                                   self.l_start:]
+            self.mutation_array = self.host_kernel
 
     def _get_kernel(self, vec, p, mutation_scale):
 
@@ -531,16 +421,12 @@ class Simulator:
         strains_dict = {}
 
         trait_vec_dict = {
-            'host': np.asarray(self.l_vec[self.l_start:]),
-            'fung': np.asarray(self.k_vec[self.k_start:]),
+            'host': np.asarray(self.l_vec),
+            'fung': np.asarray(self.k_vec),
         }
 
-        if self.config.mutation_on:
-            ode_solver = ode(self._ode_system_with_mutation)
-            self._get_mutation_array()
-
-        else:
-            ode_solver = ode(self._ode_system_no_mutation)
+        ode_solver = ode(self._ode_system_with_mutation)
+        self._get_mutation_array()
 
         ode_solver.set_integrator('dopri5', max_step=10)
 
@@ -622,8 +508,6 @@ class Simulator:
 
         return y_out, t_out
 
-    # --------------------------------------------------------------------
-
     def _generate_new_dists(self, solution, D0_l, D0_k):
 
         I_end = normalise(solution[:-1, -1])
@@ -639,15 +523,15 @@ class Simulator:
             soln_out[self.k_start:-1, :] = solution[:-1, :]
 
             fung_dist_out = np.zeros(self.n_k)
-            fung_dist_out[self.k_start:] = I_end
+            fung_dist_out = I_end
             host_dist_out = D0_l
 
         elif self.host_plant_on and not self.fungicide_on:
             soln_out = np.zeros((self.n_l+1, n_t_points))
-            soln_out[self.l_start:-1, :] = solution[:-1, :]
+            soln_out[:-1, :] = solution[:-1, :]
 
             host_dist_out = np.zeros(self.n_l)
-            host_dist_out[self.l_start:] = I_end
+            host_dist_out = I_end
             fung_dist_out = D0_k
 
         # susceptible tissue
@@ -663,13 +547,13 @@ class Simulator:
         I0_k_end = np.zeros(self.n_k)
         I0_l_end = np.zeros(self.n_l)
 
-        I_end_reshaped = np.reshape(I_end, (self.k_len, self.l_len))
+        I_end_reshaped = np.reshape(I_end, (self.n_k, self.n_l))
 
-        I0_k_end[self.k_start:] = np.asarray(
+        I0_k_end = np.asarray(
             [sum(I_end_reshaped[k, :]) for k in range(I_end_reshaped.shape[0])]
         )
 
-        I0_l_end[self.l_start:] = np.asarray(
+        I0_l_end = np.asarray(
             [sum(I_end_reshaped[:, l]) for l in range(I_end_reshaped.shape[1])]
         )
 
@@ -683,7 +567,7 @@ class Simulator:
             (I_end_reshaped.shape[0], I_end_reshaped.shape[1], n_t_points),
         )
 
-        soln_large_array[self.k_start:, self.l_start:, :] = soln_small_array
+        soln_large_array = soln_small_array
 
         solution_out = np.zeros((self.n_k*self.n_l+1, n_t_points))
 

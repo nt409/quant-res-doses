@@ -9,15 +9,6 @@ class Constants:
 
         consts = pd.read_csv('../data/03_model_inputs/constants.csv')
 
-        # economic parameters
-        # self.yield_gradient = float(
-        #     consts[consts['Parameter'] == 'Yield gradient'].Value
-        # )
-
-        # self.max_yield = float(
-        #     consts[consts['Parameter'] == 'Max yield'].Value
-        # )
-
         self.wheat_price = float(
             consts[consts['Parameter'] == 'Price of wheat'].Value
         )
@@ -44,17 +35,17 @@ class Constants:
             consts[consts['Parameter'] == 'Host_growth_initial_area'].Value
         )
 
-        # mapping between strat and index
-        self.strategy_mapping = dict(
-            spray_N_host_N=0,
-            spray_N_host_Y=1,
-            spray_Y1_host_N=2,
-            spray_Y1_host_Y=3,
-            spray_Y2_host_N=4,
-            spray_Y2_host_Y=5,
-            spray_Y3_host_N=6,
-            spray_Y3_host_Y=7
-        )
+        # # mapping between strat and index
+        # self.strategy_mapping = dict(
+        #     spray_N_host_N=0,
+        #     spray_N_host_Y=1,
+        #     spray_Y1_host_N=2,
+        #     spray_Y1_host_Y=3,
+        #     spray_Y2_host_N=4,
+        #     spray_Y2_host_Y=5,
+        #     spray_Y3_host_N=6,
+        #     spray_Y3_host_Y=7
+        # )
 
 
 PARAMS = Constants()

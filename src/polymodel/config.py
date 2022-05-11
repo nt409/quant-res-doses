@@ -38,7 +38,6 @@ class Config:
         mutation_proportion=0,
         mutation_scale_host=None,
         mutation_scale_fung=None,
-        host_growth=True,
         #
         verbose=True,
     ):
@@ -121,9 +120,6 @@ class Config:
         mutation_scale_host : float/bool, optional
             Scaling for mutation (assume exponetial dispersal), by default 0
 
-        host_growth : bool, optional
-            Either host growth on or constant host amount, by default True
-
         verbose : bool, optional
             whether to print out summary of config, by default True
 
@@ -142,8 +138,6 @@ class Config:
         self.n_iterations = n_iterations
 
         self.n_years = n_years
-
-        self.host_growth = host_growth
 
         if cultivar is None:
             self.cultivar = 'Mariboss'
@@ -165,10 +159,10 @@ class Config:
         #
         #
         # PATHOGEN
-        if mutation_proportion == 0:
-            self.mutation_on = False
-        else:
-            self.mutation_on = True
+        # if mutation_proportion == 0:
+        #     self.mutation_on = False
+        # else:
+        #     self.mutation_on = True
 
         self.mutation_proportion = mutation_proportion
 
@@ -177,20 +171,14 @@ class Config:
 
         fitted_df = pd.read_csv('../data/03_model_inputs/fitted.csv')
 
-        if self.mutation_on:
-            filt_by_mut = (
-                fitted_df
-                .loc[
-                    np.isclose(fitted_df.mutation_prop,
-                               mutation_proportion)
-                ]
-            )
+        filt_by_mut = (
+            fitted_df
+            .loc[
+                np.isclose(fitted_df.mutation_prop,
+                           mutation_proportion)
+            ]
+        )
 
-        else:
-            filt_by_mut = (
-                fitted_df
-                .loc[fitted_df['mutation_prop'].isin(['FALSE', 0, '0'])]
-            )
         #
         #
 

@@ -28,8 +28,6 @@ class Config:
         n_k=50,
         n_l=50,
         #
-        cultivar=None,
-        #
         n_iterations=None,
         n_years=25,
         #
@@ -85,20 +83,6 @@ class Config:
             Suggest XX for final run and YY for quick run
             By default 50
 
-        # disease_pressure : str, optional
-        #     Takes values in:
-        #     - 'low'
-        #     - 'med'
-        #     - 'high'
-        #     This gets mapped to a location.
-        #     By default None, which we set to 'med'.
-
-        cultivar : str, optional
-            name of cultivar, e.g.:
-            - 'Hereford'
-            - 'Mariboss'
-            , by default None (which we set to 'Mariboss')
-
         n_iterations : int, optional
             number of iterations if running multi, by default None
 
@@ -115,10 +99,10 @@ class Config:
             Between 0 and 1, by default 0
 
         mutation_scale_fung : float/bool, optional
-            Scaling for mutation (assume exponetial dispersal), by default 0
+            Scaling for mutation (assume gaussian dispersal), by default 0
 
         mutation_scale_host : float/bool, optional
-            Scaling for mutation (assume exponetial dispersal), by default 0
+            Scaling for mutation (assume gaussian dispersal), by default 0
 
         verbose : bool, optional
             whether to print out summary of config, by default True
@@ -139,11 +123,6 @@ class Config:
 
         self.n_years = n_years
 
-        if cultivar is None:
-            self.cultivar = 'Mariboss'
-        else:
-            self.cultivar = cultivar
-
         #
         #
         # STRATEGY
@@ -159,89 +138,26 @@ class Config:
         #
         #
         # PATHOGEN
-        # if mutation_proportion == 0:
-        #     self.mutation_on = False
-        # else:
-        #     self.mutation_on = True
-
         self.mutation_proportion = mutation_proportion
 
         self.mutation_scale_host = mutation_scale_host
         self.mutation_scale_fung = mutation_scale_fung
 
-        fitted_df = pd.read_csv('../data/03_model_inputs/fitted.csv')
+        fit = pd.read_csv('../data/fitted.csv')
 
-        filt_by_mut = (
-            fitted_df
-            .loc[
-                np.isclose(fitted_df.mutation_prop,
-                           mutation_proportion)
-            ]
-        )
-
-        #
-        #
-
-        # fung dist params:
-        fung_frame = (
-            filt_by_mut
-            .loc[lambda df: (
-                (df['trait'] == 'Fungicide') &
-                (
-                    np.isclose(df.mutation_scale_fung,
-                               mutation_scale_fung)
-                )
-            )
-            ]
-        )
-
-        if len(fung_frame) == 1:
-            self.k_mu = float(fung_frame.mu)
-            self.k_b = float(fung_frame.b)
-
-        elif len(fung_frame) > 1:
-            print(f'WARNING: {len(fung_frame)=}')
-            self.k_mu = float(fung_frame.mu.iloc[0])
-            self.k_b = float(fung_frame.b.iloc[0])
-
-        else:
-            print(f'WARNING: {len(fung_frame)=}')
-            self.k_mu = None
-            self.k_b = None
-
-        #
-        #
-
-        # host dist params:
-        if self.cultivar in list(filt_by_mut.trait):
-            host_frame = filt_by_mut.loc[lambda df: (
-                (df.trait == self.cultivar) &
-                (
-                    np.isclose(df.mutation_scale_host,
-                               mutation_scale_host)
-                )
+        assert len((
+            fit.loc[(
+                (np.isclose(fit.mutation_prop, mutation_proportion)) &
+                (np.isclose(fit.mutation_scale_fung, mutation_scale_fung)) &
+                (np.isclose(fit.mutation_scale_host, mutation_scale_host))
             )]
+        )) == 2
 
-            if len(host_frame) > 1:
-                print(f'WARNING: {len(host_frame)=}')
+        self.k_mu = float(fit.loc[lambda df: df.trait == 'Fungicide', 'mu'])
+        self.k_b = float(fit.loc[lambda df: df.trait == 'Fungicide', 'b'])
 
-                self.l_mu = float(host_frame.mu.iloc[0])
-                self.l_b = float(host_frame.b.iloc[0])
-
-            elif len(host_frame) == 1:
-
-                self.l_mu = float(host_frame.mu)
-                self.l_b = float(host_frame.b)
-
-            else:
-                print(f'WARNING: {len(host_frame)=}')
-                self.l_mu = None
-                self.l_b = None
-        else:
-            print(f'WARNING: {self.cultivar=}, {list(filt_by_mut.trait)=}')
-
-            self.l_mu = None
-            self.l_b = None
+        self.l_mu = float(fit.loc[lambda df: df.trait == 'Mariboss', 'mu'])
+        self.l_b = float(fit.loc[lambda df: df.trait == 'Mariboss', 'b'])
 
         #
         #
@@ -264,7 +180,6 @@ class Config:
         #
         #
         #
-        # for repr, conf_str_gen see below
         #
         #
 

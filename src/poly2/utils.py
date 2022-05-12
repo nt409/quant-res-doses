@@ -7,7 +7,6 @@ Fungicide
 """
 
 import itertools
-import logging
 import os
 import pickle
 from math import exp, log, log10
@@ -19,8 +18,8 @@ from scipy.optimize import minimize
 from scipy.integrate import ode
 from scipy import signal
 
-from poly2.consts import DEFAULT_I0, FUNG_DECAY_RATE
-from poly2.params import PARAMS
+from polymodel.consts import DEFAULT_I0, FUNG_DECAY_RATE
+from polymodel.params import PARAMS
 
 
 def normalise(dist):
@@ -197,12 +196,6 @@ def yield_function(sev):
     return out
 
 
-def linear_yield_function(sev):
-    # OLD VERSION
-    out = (1 + PARAMS.yield_gradient*sev)*PARAMS.max_yield
-    return out
-
-
 def economic_yield_function(yield_vec, n_sprays):
     spray_cost = PARAMS.spray_costs[str(n_sprays)]
     profit = [PARAMS.wheat_price*yy - spray_cost for yy in yield_vec]
@@ -244,11 +237,11 @@ def trait_vec(n):
     return vec
 
 
-def initial_host_distribution(n, a, b):
+def initial_host_dist(n, a, b):
     return beta_dist(n, a, b)
 
 
-def initial_fung_distribution(n, a, b):
+def initial_fung_dist(n, a, b):
     # return beta_dist(n, a, b)
     return gamma_dist(n, a, b)
 
@@ -341,7 +334,7 @@ class Fungicide:
         value_this_strain : float
             Trait value between 0 and 1
         t : float
-            time (between 1456 and 2690)
+            time (between T_1=1456 and T_end=2515)
 
         Returns
         -------
@@ -376,37 +369,8 @@ def truncated_exp_pdf(x, lambd):
         return lambd * np.exp(-lambd*x) / (1 - np.exp(-100*lambd))
 
 
-def get_host_dist_params(mu, b, config):
-    """Find a, b from mean, b with config fallback if a/b not provided
-
-    Beta distribution in effect space [0,1]
-
-    See en.wikipedia.org/wiki/Beta_distribution
-
-    Parameters
-    ----------
-    mu : float
-        mean of beta dist - expect around 0.8
-    b : float
-        shape parameter
-    config : Config
-        see Config docs
-
-    """
-
-    if mu is not None and b is not None:
-        a_out = (b*mu)/(1-mu)
-
-        return a_out, b
-
-    # ELSE
-
-    mu_val = config.l_mu
-    b_val = config.l_b
-
-    a_out = (b_val*mu_val)/(1-mu_val)
-
-    return a_out, b_val
+def get_dist_mean(dist, traitvec):
+    return np.asarray([np.dot(dist[:, yr], traitvec) for yr in range(dist.shape[1])])
 
 
 def get_host_dist_params_from_config(config):
@@ -427,51 +391,6 @@ def get_host_dist_params_from_config(config):
     b_val = config.l_b
 
     a_out = (b_val*mu_val)/(1-mu_val)
-
-    return a_out, b_val
-
-
-def get_fung_dist_params(mu, b, config):
-    """Find a, b from mean, b with config fallback if a/b not provided
-
-    Gamma distribution in curvature space
-
-    NB shape/rate parameterisation from wikipedia:
-    - en.wikipedia.org/wiki/Gamma_distribution
-    - docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html
-
-    This means mu = alpha/beta
-    beta = 1/scale
-
-    Parameters
-    ----------
-    mu : float
-        mean of gamma distribution (expect in (0,20))
-    b : float
-        1/scale
-    config : Config
-        see Config docs
-
-    """
-
-    if mu is not None and b is not None:
-        # GAMMA
-        a_out = mu*b
-
-        # BETA
-        # a_out = (b*mu)/(1-mu)
-        return a_out, b
-
-    # ELSE
-
-    mu_val = config.k_mu
-    b_val = config.k_b
-
-    # GAMMA
-    a_out = mu_val*b_val
-
-    # BETA
-    # a_out = (b_val*mu_val)/(1-mu_val)
 
     return a_out, b_val
 
@@ -502,8 +421,3 @@ def get_fung_dist_params_from_config(config):
     a_out = mu_val*b_val
 
     return a_out, b_val
-
-
-def get_dist_mean(dist, traitvec):
-    return np.asarray([np.dot(dist[:, yr], traitvec)
-                       for yr in range(dist.shape[1])])

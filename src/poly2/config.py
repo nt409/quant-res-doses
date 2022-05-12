@@ -115,11 +115,19 @@ class Config:
 
         Examples
         --------
-        >>>single = Config(type='single', sprays=[2], host_on=[False], n_k=100,
-        ... n_l=100)
-        >>>multi = Config(type='multi', sprays=[0,2], host_on=[False],
-        ... n_iterations=10)
-        >>>variable = Config(type='variable', host_on=[False])
+        >>>single = Config(
+        ... type='single',
+        ... sprays=[2],
+        ... host_on=[False],
+        ... n_k=100,
+        ... n_l=100
+        ... )
+        >>>multi = Config(
+        ... type='multi',
+        ... sprays=[0,2],
+        ... host_on=[False],
+        ... n_iterations=10
+        ... )
         """
 
         self.n_k = n_k

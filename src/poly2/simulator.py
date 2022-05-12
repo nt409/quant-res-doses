@@ -4,28 +4,21 @@ import numpy as np
 from scipy import signal
 from scipy.integrate import ode
 from scipy.stats import norm
-from tqdm import tqdm
 
 from poly2.params import PARAMS
 from poly2.utils import (
     Fungicide,
     economic_yield_function,
     get_fung_dist_params_from_config,
-    get_host_dist_params,
-    get_fung_dist_params,
     get_host_dist_params_from_config,
     trait_vec,
     edge_values,
     host_growth_function,
-    initial_host_distribution,
-    initial_fung_distribution,
+    initial_host_dist,
+    initial_fung_dist,
     normalise,
     yield_function
 )
-
-#
-#
-#
 
 
 class SimulatorOneTrait:
@@ -35,10 +28,6 @@ class SimulatorOneTrait:
     def __init__(
         self,
         config,
-        # k_mu=None,
-        # k_b=None,
-        # l_mu=None,
-        # l_b=None,
         fungicide_on=True,
         host_plant_on=False,
         number_of_sprays=0,
@@ -50,22 +39,6 @@ class SimulatorOneTrait:
         ----------
         config : Config
             See docs for Config
-
-        # k_mu : float, optional
-        #     Fungicide distribution parameter.
-        #     Overrides config k_mu, by default None
-
-        # k_b : float, optional
-        #     Fungicide distribution parameter.
-        #     Overrides config k_b, by default None
-
-        # l_mu : float, optional
-        #     Host plant distribution parameter.
-        #     Overrides config l_mu, by default None
-
-        # l_b : float, optional
-        #     Host plant distribution parameter.
-        #     Overrides config l_b, by default None
 
         host_plant_on : bool, optional
             Whether host plant protection is on, by default True
@@ -90,33 +63,20 @@ class SimulatorOneTrait:
         self.number_of_sprays = number_of_sprays
         self.custom_sprays_vec = custom_sprays_vec
 
-        self.config = config
+        self.config_o = config
+        self.mutation_array = None
 
-        self.k_a, self.k_b = get_fung_dist_params_from_config(self.config)
+        self.k_a, self.k_b = get_fung_dist_params_from_config(self.config_o)
+        self.l_a, self.l_b = get_host_dist_params_from_config(self.config_o)
 
-        self.l_a, self.l_b = get_host_dist_params_from_config(self.config)
-
-        self.n_k = self.config.n_k
-        self.n_l = self.config.n_l
+        self.n_k = self.config_o.n_k
+        self.n_l = self.config_o.n_l
 
         self.k_vec = trait_vec(self.n_k)
         self.l_vec = trait_vec(self.n_l)
 
-        self.mutation_array = None
-        self.fung_kernel = None
-        self.host_kernel = None
-
-        self.initial_l_dist = initial_host_distribution(
-            self.n_l,
-            self.l_a,
-            self.l_b
-        )
-
-        self.initial_k_dist = initial_fung_distribution(
-            self.n_k,
-            self.k_a,
-            self.k_b
-        )
+        self.initial_k_dist = initial_fung_dist(self.n_k, self.k_a, self.k_b)
+        self.initial_l_dist = initial_host_dist(self.n_l, self.l_a, self.l_b)
 
         #
         #
@@ -130,6 +90,8 @@ class SimulatorOneTrait:
             A single I0 value per year
         beta_vec : np.array/list
             A single beta value per year
+        doses : np.array/list
+            A vector of dose values
 
         Returns
         -------
@@ -157,7 +119,7 @@ class SimulatorOneTrait:
         if doses is None:
             doses = np.ones(len(beta_vec))
 
-        replace_cultivar_array = self.config.replace_cultivars
+        replace_cultivar_array = self.config_o.replace_cultivars
 
         fung_dists = np.zeros((self.n_k, len(beta_vec)+1))
         host_dists = np.zeros((self.n_l, len(beta_vec)+1))
@@ -172,7 +134,7 @@ class SimulatorOneTrait:
         else:
             sprays_vec_use = self.number_of_sprays*np.ones(len(beta_vec))
 
-        self._get_mutation_array()
+        self._get_mutation_kernels()
         #
         # run 0th year
         (
@@ -203,7 +165,8 @@ class SimulatorOneTrait:
 
         #
         # calculate the rest of the years
-        for yr in tqdm(range(1, len(beta_vec))):
+        # for yr in tqdm(range(1, len(beta_vec))):
+        for yr in range(1, len(beta_vec)):
 
             (
                 sol_list[:, :, yr], t, fung_dists[:, yr+1],
@@ -323,31 +286,30 @@ class SimulatorOneTrait:
 
         self.y0 = PARAMS.host_growth_initial_area*y0_use
 
-    def _get_mutation_array(self):
-
-        if self.fung_kernel is None:
-            self.fung_kernel = self._get_kernel(
-                self.k_vec,
-                self.config.mutation_proportion,
-                self.config.mutation_scale_fung,
-            )
-
-        if self.host_kernel is None:
-            self.host_kernel = self._get_kernel(
-                self.l_vec,
-                self.config.mutation_proportion,
-                self.config.mutation_scale_host,
-            )
+    def _get_mutation_kernels(self):
 
         if self.fungicide_on and not self.host_plant_on:
-            self.mutation_array = self.fung_kernel
+            # FUNG
+            self.mutation_array = self._get_kernel(
+                self.k_vec,
+                self.config_o.mutation_proportion,
+                self.config_o.mutation_scale_fung,
+            )
 
         elif not self.fungicide_on and self.host_plant_on:
-            self.mutation_array = self.host_kernel
+            # HOST
+            self.mutation_array = self._get_kernel(
+                self.l_vec,
+                self.config_o.mutation_proportion,
+                self.config_o.mutation_scale_host,
+            )
 
     def _get_kernel(self, vec, p, mutation_scale):
-
-        print('changed to transpose!!!')
+        # NB changed to transpose of prev version
+        # Needed to now that have dispersal boundary conditions
+        # This means kernel is not quite symmetric, but ensures that disease
+        # stays constant when sprays = 0, which it wasn't before because not
+        # all rows (/columns would need to check) sum to 1.
 
         N = len(vec)
 
@@ -421,6 +383,7 @@ class SimulatorOneTrait:
         # add other params
         my_fungicide = Fungicide(num_sprays, dose)
 
+        # comes from utils
         host_growth_fn = host_growth_function
 
         ode_solver.set_f_params(
@@ -502,14 +465,13 @@ class SimulatorBothTraits:
         self.number_of_sprays = number_of_sprays
         self.custom_sprays_vec = custom_sprays_vec
 
-        self.config = config
+        self.config_b = config
 
-        self.k_a, self.k_b = get_fung_dist_params_from_config(self.config)
+        self.k_a, self.k_b = get_fung_dist_params_from_config(self.config_b)
+        self.l_a, self.l_b = get_host_dist_params_from_config(self.config_b)
 
-        self.l_a, self.l_b = get_host_dist_params_from_config(self.config)
-
-        self.n_k = self.config.n_k
-        self.n_l = self.config.n_l
+        self.n_k = self.config_b.n_k
+        self.n_l = self.config_b.n_l
 
         self.k_vec = trait_vec(self.n_k)
         self.l_vec = trait_vec(self.n_l)
@@ -517,17 +479,8 @@ class SimulatorBothTraits:
         self.fung_kernel = None
         self.host_kernel = None
 
-        self.initial_l_dist = initial_host_distribution(
-            self.n_l,
-            self.l_a,
-            self.l_b
-        )
-
-        self.initial_k_dist = initial_fung_distribution(
-            self.n_k,
-            self.k_a,
-            self.k_b
-        )
+        self.initial_k_dist = initial_fung_dist(self.n_k, self.k_a, self.k_b)
+        self.initial_l_dist = initial_host_dist(self.n_l, self.l_a, self.l_b)
 
         #
         #
@@ -570,7 +523,7 @@ class SimulatorBothTraits:
         if doses is None:
             doses = np.ones(len(beta_vec))
 
-        replace_cultivar_array = self.config.replace_cultivars
+        replace_cultivar_array = self.config_b.replace_cultivars
 
         fung_dists = np.zeros((self.n_k, len(beta_vec)+1))
         host_dists = np.zeros((self.n_l, len(beta_vec)+1))
@@ -616,7 +569,8 @@ class SimulatorBothTraits:
 
         #
         # calculate the rest of the years
-        for yr in tqdm(range(1, len(beta_vec))):
+        # for yr in tqdm(range(1, len(beta_vec))):
+        for yr in range(1, len(beta_vec)):
 
             (
                 sol_list[:, :, yr], t, fung_dists[:, yr+1],
@@ -669,7 +623,7 @@ class SimulatorBothTraits:
 
         self._get_y0(I0_in, D0_l, D0_k)
 
-        soln_tmp, t_out = self._solve_it(beta_in, num_sprays, dose)
+        soln_tmp, t_out = self._solve_it(beta_in, num_sprays)
 
         soln, fung_dist_out, host_dist_out = self._dists_fung_and_host(
             soln_tmp)
@@ -764,14 +718,14 @@ class SimulatorBothTraits:
 
         self.fung_kernel = self._get_kernel(
             self.k_vec,
-            self.config.mutation_proportion,
-            self.config.mutation_scale_fung,
+            self.config_b.mutation_proportion,
+            self.config_b.mutation_scale_fung,
         )
 
         self.host_kernel = self._get_kernel(
             self.l_vec,
-            self.config.mutation_proportion,
-            self.config.mutation_scale_host,
+            self.config_b.mutation_proportion,
+            self.config_b.mutation_scale_host,
         )
 
     def _get_kernel(self, vec, p, mutation_scale):
@@ -832,6 +786,7 @@ class SimulatorBothTraits:
         # add other params
         my_fungicide = Fungicide(num_sprays, dose)
 
+        # comes from utils
         host_growth_fn = host_growth_function
 
         ode_solver.set_f_params(

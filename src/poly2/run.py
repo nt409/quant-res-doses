@@ -102,43 +102,10 @@ def multiple_run(config):
     """
     return no_joblib_multiple_run(config)
 
-
-@memory.cache
-def variable_strategy_run(config, first, second):
-    """Variable Strategy
-
-    Parameters
-    ----------
-    config : Config
-        see Config docs
-
-    spray_first_n : int
-        Application for first N years
-
-    spray_second_n : int
-        Application for second N years
-
-    Returns
-    -------
-    model_output_list : list
-        list of simulation outputs; one for each fungicide strategy
-
-    Example
-    -------
-    >>>config_variable = Config(
-    ...     type='variable',
-    ...     n_k=100,
-    ...     n_l=100,
-    ...     host_on=[False],
-    ... )
-    >>>data = variable_strategy_run(config_variable, 2, 3)
-    """
-    return no_joblib_variable_strategy_run(config, first, second)
-
-
 #
 #
 #
+
 
 def no_joblib_simulations_run(
     config,
@@ -177,12 +144,19 @@ def no_joblib_simulations_run(
 
         fungicide_on = False if (host and spray == 0) else True
 
-        this_simulation = Simulator(
-            config=config_save,
-            host_plant_on=host,
-            fungicide_on=fungicide_on,
-            number_of_sprays=spray,
-        )
+        if host and fungicide_on:
+            this_simulation = SimulatorBothTraits(
+                config=config_save,
+                number_of_sprays=spray,
+            )
+
+        else:
+            this_simulation = SimulatorOneTrait(
+                config=config_save,
+                fungicide_on=fungicide_on,
+                host_plant_on=host,
+                number_of_sprays=spray,
+            )
 
         key = keys_from_config(config_save)[0]
 
@@ -193,47 +167,6 @@ def no_joblib_simulations_run(
         )
 
     return model_output
-
-
-#
-#
-#
-
-def no_joblib_variable_strategy_run(config, spray_first_n, spray_second_n):
-    """See docs above for joblib version"""
-
-    print('running variable')
-
-    beta_vec_run = [config.beta_single] * config.n_years
-
-    I0_vec_run = [config.I0_single] * config.n_years
-
-    for host_on in config.host_on:
-
-        num_strats = config.n_years + 1
-        model_output_list = [[]]*(num_strats)
-
-        for ii in tqdm(range(num_strats)):
-            spray_vec = (
-                [spray_first_n]*ii +
-                [spray_second_n]*(num_strats-1-ii)
-            )
-
-            spray_vec = np.asarray(spray_vec)
-
-            this_simulation = Simulator(
-                config=config,
-                host_plant_on=host_on,
-                fungicide_on=True,
-                custom_sprays_vec=spray_vec,
-            )
-
-            model_output_list[ii] = this_simulation.run_model(
-                I0_vec=I0_vec_run,
-                beta_vec=beta_vec_run,
-            )
-
-    return model_output_list
 
 
 def no_joblib_multiple_run(config):

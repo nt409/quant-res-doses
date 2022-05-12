@@ -6,6 +6,7 @@ __pycache__/
 dist/
 *ipynb_checkpoints/
 
+# want nbs shared across devices
 # notebooks/*
 # *.ipynb
 

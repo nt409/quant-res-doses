@@ -28,577 +28,446 @@ from poly2.utils import (
 #
 
 
-# class Simulator:
-#     """Sets up and runs a single model simulation.
-
-#     Called by RunModel and ModelFitting.
-#     """
-
-#     def __init__(
-#         self,
-#         config,
-#         k_mu=None,
-#         k_b=None,
-#         l_mu=None,
-#         l_b=None,
-#         host_plant_on=True,
-#         fungicide_on=True,
-#         number_of_sprays=0,
-#         custom_sprays_vec=None,
-#     ):
-#         """Init method
-
-#         Parameters
-#         ----------
-#         config : Config
-#             See docs for Config
-
-#         k_mu : float, optional
-#             Fungicide distribution parameter.
-#             Overrides config k_mu, by default None
-
-#         k_b : float, optional
-#             Fungicide distribution parameter.
-#             Overrides config k_b, by default None
-
-#         l_mu : float, optional
-#             Host plant distribution parameter.
-#             Overrides config l_mu, by default None
+class SimulatorOneTrait:
+    """Sets up and runs a single model simulation for fung OR host trait.
+    """
+
+    def __init__(
+        self,
+        config,
+        # k_mu=None,
+        # k_b=None,
+        # l_mu=None,
+        # l_b=None,
+        fungicide_on=True,
+        host_plant_on=False,
+        number_of_sprays=0,
+        custom_sprays_vec=None,
+    ):
+        """Init method
+
+        Parameters
+        ----------
+        config : Config
+            See docs for Config
+
+        # k_mu : float, optional
+        #     Fungicide distribution parameter.
+        #     Overrides config k_mu, by default None
+
+        # k_b : float, optional
+        #     Fungicide distribution parameter.
+        #     Overrides config k_b, by default None
+
+        # l_mu : float, optional
+        #     Host plant distribution parameter.
+        #     Overrides config l_mu, by default None
+
+        # l_b : float, optional
+        #     Host plant distribution parameter.
+        #     Overrides config l_b, by default None
+
+        host_plant_on : bool, optional
+            Whether host plant protection is on, by default True
+            Used instead of config, since might be iterating over multiple values
+            a list in the config.
+
+        fungicide_on : bool, optional
+            Whether fungicide protection is on, by default True.
+            Used instead of config, since might be iterating over multiple values
+            a list in the config.
+
+        number_of_sprays : int, optional
+            N sprays per year, overridden by custom sprays vec, by default 0
+
+        custom_sprays_vec : list/np.array, optional
+            Overrides number of sprays, by default None
+        """
+
+        self.host_plant_on = host_plant_on
+        self.fungicide_on = fungicide_on
+
+        self.number_of_sprays = number_of_sprays
+        self.custom_sprays_vec = custom_sprays_vec
+
+        self.config = config
+
+        self.k_a, self.k_b = get_fung_dist_params_from_config(self.config)
+
+        self.l_a, self.l_b = get_host_dist_params_from_config(self.config)
+
+        self.n_k = self.config.n_k
+        self.n_l = self.config.n_l
+
+        self.k_vec = trait_vec(self.n_k)
+        self.l_vec = trait_vec(self.n_l)
+
+        self.mutation_array = None
+        self.fung_kernel = None
+        self.host_kernel = None
+
+        self.initial_l_dist = initial_host_distribution(
+            self.n_l,
+            self.l_a,
+            self.l_b
+        )
+
+        self.initial_k_dist = initial_fung_distribution(
+            self.n_k,
+            self.k_a,
+            self.k_b
+        )
+
+        #
+        #
+
+    def run_model(self, I0_vec, beta_vec, doses=None):
+        """_summary_
+
+        Parameters
+        ----------
+        I0_vec : np.array/list
+            A single I0 value per year
+        beta_vec : np.array/list
+            A single beta value per year
+
+        Returns
+        -------
+        dict
+            keys:
+            - fung_dists: np.array, shape (n_k, n_years+1) - includes year 0
+            - host_dists: np.array, shape (n_l, n_years+1)
+
+            - n_k: int
+            - n_l: int
+
+            - I0_vec: np.array, shape (n_years, )
+            - beta_vec: np.array, shape (n_years, )
+
+            - t: np.array, shape (n_timepoints, )
+            - y: np.array, shape (1+ [n_k OR n_l OR n_k*n_l], n_t, n_years)
+
+            - total_I: np.array, shape (n_timepoints, n_years)
+
+            - dis_sev: np.array, shape (n_years, )
+            - yield_vec: np.array, shape (n_years, )
+            - econ: np.array, shape (n_years, )
+        """
+
+        if doses is None:
+            doses = np.ones(len(beta_vec))
+
+        replace_cultivar_array = self.config.replace_cultivars
+
+        fung_dists = np.zeros((self.n_k, len(beta_vec)+1))
+        host_dists = np.zeros((self.n_l, len(beta_vec)+1))
+
+        fung_dists[:, 0] = self.initial_k_dist
+        host_dists[:, 0] = self.initial_l_dist
+
+        dis_sev = np.zeros(len(beta_vec))
+
+        if self.custom_sprays_vec is not None:
+            sprays_vec_use = self.custom_sprays_vec
+        else:
+            sprays_vec_use = self.number_of_sprays*np.ones(len(beta_vec))
+
+        self._get_mutation_array()
+        #
+        # run 0th year
+        (
+            sol, t, fung_dists[:, 1], host_dists[:, 1], total_infection
+        ) = self.calculate_ode_soln(
+            fung_dists[:, 0],
+            host_dists[:, 0],
+            I0_vec[0],
+            beta_vec[0],
+            sprays_vec_use[0],
+            doses[0],
+        )
+
+        # get shape of solution arrays from the output
+        sol_list = np.zeros((sol.shape[0], sol.shape[1], len(beta_vec)))
+        total_I = np.zeros((len(t), len(beta_vec)))
+
+        # set the first year
+        sol_list[:, :, 0] = sol
+        total_I[:, 0] = total_infection
+        dis_sev[0] = total_I[-1, 0]
+
+        S_end = sol_list[-1, -1, 0]
+        dis_sev[0] = dis_sev[0] / (dis_sev[0] + S_end)
+
+        if replace_cultivar_array is not None and replace_cultivar_array[0]:
+            host_dists[:, 1] = self.initial_l_dist
+
+        #
+        # calculate the rest of the years
+        for yr in tqdm(range(1, len(beta_vec))):
+
+            (
+                sol_list[:, :, yr], t, fung_dists[:, yr+1],
+                host_dists[:, yr+1], total_I[:, yr]
+            ) = self.calculate_ode_soln(
+                fung_dists[:, yr],
+                host_dists[:, yr],
+                I0_vec[yr],
+                beta_vec[yr],
+                sprays_vec_use[yr],
+                doses[yr],
+            )
+
+            dis_sev[yr] = total_I[-1, yr]
+
+            # scale so proportion of final leaf size
+            S_end = sol_list[-1, -1, yr]
+            dis_sev[yr] = dis_sev[yr] / (dis_sev[yr] + S_end)
+
+            if (replace_cultivar_array is not None
+                    and replace_cultivar_array[yr]):
+                host_dists[:, yr+1] = self.initial_l_dist
 
-#         l_b : float, optional
-#             Host plant distribution parameter.
-#             Overrides config l_b, by default None
+        # calculate yield and economic yield
+        yield_vec = [yield_function(sev) for sev in dis_sev]
+
+        econ = [
+            economic_yield_function([yield_], int(spray_num))[0]
+            for yield_, spray_num in zip(yield_vec, sprays_vec_use)
+        ]
+
+        return {
+            'fung_dists': fung_dists,
+            'host_dists': host_dists,
+            'n_k': self.n_k,
+            'n_l': self.n_l,
+            'k_vec': self.k_vec,
+            'l_vec': self.l_vec,
+            'I0_vec': I0_vec,
+            'beta_vec': beta_vec,
+            't': t,
+            'y': sol_list,
+            'total_I': total_I,
+            'dis_sev': dis_sev,
+            'yield_vec': np.asarray(yield_vec),
+            'econ': np.asarray(econ)
+        }
 
-#         host_plant_on : bool, optional
-#             Whether host plant protection is on, by default True
-#             Used instead of config, since might be iterating over multiple values
-#             a list in the config.
-
-#         fungicide_on : bool, optional
-#             Whether fungicide protection is on, by default True.
-#             Used instead of config, since might be iterating over multiple values
-#             a list in the config.
-
-#         number_of_sprays : int, optional
-#             N sprays per year, overridden by custom sprays vec, by default 0
-
-#         custom_sprays_vec : list/np.array, optional
-#             Overrides number of sprays, by default None
-#         """
-
-#         self.host_plant_on = host_plant_on
-#         self.fungicide_on = fungicide_on
-
-#         self.number_of_sprays = number_of_sprays
-#         self.custom_sprays_vec = custom_sprays_vec
-
-#         self.config = config
-
-#         self.k_a, self.k_b = get_fung_dist_params(k_mu, k_b, self.config)
-
-#         self.l_a, self.l_b = get_host_dist_params(l_mu, l_b, self.config)
-
-#         self.n_k = self.config.n_k
-#         self.n_l = self.config.n_l
-
-#         self.k_vec = trait_vec(self.n_k)
-#         self.l_vec = trait_vec(self.n_l)
-
-#         self.mutation_array = None
-#         self.fung_kernel = None
-#         self.host_kernel = None
-
-#         self.initial_l_dist = initial_host_distribution(
-#             self.n_l,
-#             self.l_a,
-#             self.l_b
-#         )
-
-#         self.initial_k_dist = initial_fung_distribution(
-#             self.n_k,
-#             self.k_a,
-#             self.k_b
-#         )
-
-#         #
-#         #
-
-#     def run_model(self, I0_vec, beta_vec, doses=None):
-#         """_summary_
-
-#         Parameters
-#         ----------
-#         I0_vec : np.array/list
-#             A single I0 value per year
-#         beta_vec : np.array/list
-#             A single beta value per year
-
-#         Returns
-#         -------
-#         dict
-#             keys:
-#             - fung_dists: np.array, shape (n_k, n_years+1) - includes year 0
-#             - host_dists: np.array, shape (n_l, n_years+1)
-
-#             - n_k: int
-#             - n_l: int
-
-#             - I0_vec: np.array, shape (n_years, )
-#             - beta_vec: np.array, shape (n_years, )
-
-#             - t: np.array, shape (n_timepoints, )
-#             - y: np.array, shape (1+ [n_k OR n_l OR n_k*n_l], n_t, n_years)
-
-#             - total_I: np.array, shape (n_timepoints, n_years)
-
-#             - dis_sev: np.array, shape (n_years, )
-#             - yield_vec: np.array, shape (n_years, )
-#             - econ: np.array, shape (n_years, )
-#         """
-
-#         if doses is None:
-#             doses = np.ones(len(beta_vec))
-
-#         replace_cultivar_array = self.config.replace_cultivars
-
-#         fung_dists = np.zeros((self.n_k, len(beta_vec)+1))
-#         host_dists = np.zeros((self.n_l, len(beta_vec)+1))
-
-#         fung_dists[:, 0] = self.initial_k_dist
-#         host_dists[:, 0] = self.initial_l_dist
-
-#         dis_sev = np.zeros(len(beta_vec))
-
-#         if self.custom_sprays_vec is not None:
-#             sprays_vec_use = self.custom_sprays_vec
-#         else:
-#             sprays_vec_use = self.number_of_sprays*np.ones(len(beta_vec))
-
-#         self._get_mutation_array()
-#         #
-#         # run 0th year
-#         (
-#             sol, t, fung_dists[:, 1], host_dists[:, 1], total_infection
-#         ) = self.calculate_ode_soln(
-#             fung_dists[:, 0],
-#             host_dists[:, 0],
-#             I0_vec[0],
-#             beta_vec[0],
-#             sprays_vec_use[0],
-#             doses[0],
-#         )
-
-#         # get shape of solution arrays from the output
-#         sol_list = np.zeros((sol.shape[0], sol.shape[1], len(beta_vec)))
-#         total_I = np.zeros((len(t), len(beta_vec)))
-
-#         # set the first year
-#         sol_list[:, :, 0] = sol
-#         total_I[:, 0] = total_infection
-#         dis_sev[0] = total_I[-1, 0]
-
-#         S_end = sol_list[-1, -1, 0]
-#         dis_sev[0] = dis_sev[0] / (dis_sev[0] + S_end)
-
-#         if replace_cultivar_array is not None and replace_cultivar_array[0]:
-#             host_dists[:, 1] = self.initial_l_dist
-
-#         #
-#         # calculate the rest of the years
-#         for yr in tqdm(range(1, len(beta_vec))):
-
-#             (
-#                 sol_list[:, :, yr], t, fung_dists[:, yr+1],
-#                 host_dists[:, yr+1], total_I[:, yr]
-#             ) = self.calculate_ode_soln(
-#                 fung_dists[:, yr],
-#                 host_dists[:, yr],
-#                 I0_vec[yr],
-#                 beta_vec[yr],
-#                 sprays_vec_use[yr],
-#                 doses[yr],
-#             )
-
-#             dis_sev[yr] = total_I[-1, yr]
-
-#             # scale so proportion of final leaf size
-#             S_end = sol_list[-1, -1, yr]
-#             dis_sev[yr] = dis_sev[yr] / (dis_sev[yr] + S_end)
-
-#             if (replace_cultivar_array is not None
-#                     and replace_cultivar_array[yr]):
-#                 host_dists[:, yr+1] = self.initial_l_dist
-
-#         # calculate yield and economic yield
-#         yield_vec = [yield_function(sev) for sev in dis_sev]
-
-#         econ = [
-#             economic_yield_function([yield_], int(spray_num))[0]
-#             for yield_, spray_num in zip(yield_vec, sprays_vec_use)
-#         ]
+    def calculate_ode_soln(self, D0_k, D0_l, I0_in, beta_in, num_sprays, dose):
 
-#         return {
-#             'fung_dists': fung_dists,
-#             'host_dists': host_dists,
-#             'n_k': self.n_k,
-#             'n_l': self.n_l,
-#             'k_vec': self.k_vec,
-#             'l_vec': self.l_vec,
-#             'I0_vec': I0_vec,
-#             'beta_vec': beta_vec,
-#             't': t,
-#             'y': sol_list,
-#             'total_I': total_I,
-#             'dis_sev': dis_sev,
-#             'yield_vec': np.asarray(yield_vec),
-#             'econ': np.asarray(econ)
-#         }
+        self._get_y0(I0_in, D0_l, D0_k)
 
-#     def calculate_ode_soln(self, D0_k, D0_l, I0_in, beta_in, num_sprays, dose):
+        solution_tmp, solutiont = self._solve_it(beta_in, num_sprays, dose)
 
-#         # self._reduce_box_numbers(D0_k, D0_l, will_reduce)
-
-#         self._get_y0(I0_in, D0_l, D0_k)
-
-#         solution_tmp, solutiont = self._solve_it(beta_in, num_sprays, dose)
-
-#         solution, fung_dist_out, host_dist_out = self._generate_new_dists(
-#             solution_tmp, D0_l, D0_k)
-
-#         total_infection = [sum(solution[:-1, tt])
-#                            for tt in range(len(solutiont))]
-#         total_infection = np.asarray(total_infection)
-
-#         return solution, solutiont, fung_dist_out, host_dist_out, total_infection
-
-#     def _ode_system_with_mutation(
-#             self,
-#             t,
-#             y,
-#             beta,
-#             host_growth_fn,
-#             strains_dict,
-#             fungicide,
-#             mutation_array
-#     ):
-
-#         dydt = np.zeros(len(self.y0))
-
-#         S = y[-1]
-
-#         old_I = y[:-1]
-#         new_I = np.matmul(mutation_array, old_I)
-
-#         # host effect is same as value of strain
-#         host_effect_vec = np.array(strains_dict['host'])
-
-#         # fung effect is value of strain into fungicide effect function,
-#         # which depends on dose
-#         fung_effect_vec = np.array([
-#             fungicide.effect(strain, t) for strain in strains_dict['fung']
-#         ])
-
-#         disease_states = host_effect_vec * fung_effect_vec * new_I
-
-#         # print(sum(new_I))
-#         # print(sum(old_I))
-#         # print('ok')
-
-#         # # print(sum(mutation_array))
-
-#         dydt[:-1] = beta * S * disease_states
+        solution, fung_dist_out, host_dist_out = self._generate_new_dists(
+            solution_tmp, D0_l, D0_k)
 
-#         dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states)
-
-#         return dydt
+        total_infection = [sum(solution[:-1, tt])
+                           for tt in range(len(solutiont))]
+        total_infection = np.asarray(total_infection)
 
-#     def _get_y0(self, I0_in, D0_l, D0_k):
-#         """
-#         y0 different if we have two active traits vs one
-#         """
+        return solution, solutiont, fung_dist_out, host_dist_out, total_infection
 
-#         S0_prop = 1 - I0_in
+    def _ode_system_with_mutation(
+            self,
+            t,
+            y,
+            beta,
+            host_growth_fn,
+            strains_dict,
+            fungicide,
+            mutation_array
+    ):
 
-#         # set initial condition
-#         if self.host_plant_on and self.fungicide_on:
-#             y0_use = np.zeros(self.n_k*self.n_l+1)
+        dydt = np.zeros(len(self.y0))
 
-#             infection_array = I0_in * np.outer(D0_k, D0_l)
+        S = y[-1]
 
-#             infection_vector = np.reshape(
-#                 infection_array,
-#                 (self.n_k*self.n_l)
-#             )
+        old_I = y[:-1]
 
-#             y0_use[:-1] = infection_vector
+        new_I = np.matmul(mutation_array, old_I)
 
-#         elif self.fungicide_on and not self.host_plant_on:
-#             y0_use = np.zeros(self.n_k+1)
-#             y0_use[:-1] = I0_in*D0_k
+        # host effect is same as value of strain
+        host_effect_vec = np.array(strains_dict['host'])
 
-#         elif self.host_plant_on and not self.fungicide_on:
-#             y0_use = np.zeros(self.n_l+1)
-#             y0_use[:-1] = I0_in*D0_l
+        # fung effect is value of strain into fungicide effect function,
+        # which depends on dose
+        fung_effect_vec = np.array([
+            fungicide.effect(strain, t) for strain in strains_dict['fung']
+        ])
 
-#         y0_use[-1] = S0_prop
+        disease_states = host_effect_vec * fung_effect_vec * new_I
 
-#         self.y0 = PARAMS.host_growth_initial_area*y0_use
+        dydt[:-1] = beta * S * disease_states
 
-#     def _get_mutation_array(self):
+        dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states)
 
-#         if self.fung_kernel is None:
-#             self.fung_kernel = self._get_kernel(
-#                 self.k_vec,
-#                 self.config.mutation_proportion,
-#                 self.config.mutation_scale_fung,
-#             )
+        return dydt
 
-#         if self.host_kernel is None:
-#             self.host_kernel = self._get_kernel(
-#                 self.l_vec,
-#                 self.config.mutation_proportion,
-#                 self.config.mutation_scale_host,
-#             )
+    def _get_y0(self, I0_in, D0_l, D0_k):
+        """
+        y0 different if we have two active traits vs one
+        """
 
-#         if self.fungicide_on and self.host_plant_on:
-#             mutate_array = np.zeros(
-#                 (self.n_k*self.n_l,
-#                  self.n_k*self.n_l)
-#             )
-#             print('starting things')
+        S0_prop = 1 - I0_in
 
-#             fung_ker = self.fung_kernel
-#             host_ker = self.host_kernel
+        # set initial condition
+        if self.fungicide_on and not self.host_plant_on:
+            y0_use = np.zeros(self.n_k+1)
+            y0_use[:-1] = I0_in*D0_k
 
-#             print('changed order of h1, h2')
+        elif self.host_plant_on and not self.fungicide_on:
+            y0_use = np.zeros(self.n_l+1)
+            y0_use[:-1] = I0_in*D0_l
 
-#             # CHANGING BOTH WAS WRONG - not normalised
-#             # KEEP F; CHANGE H... not fixed issue
-#             # KEEP H; CHANGE F... wrong, not normalised
-#             # KEEP BOTH... not fixed issue
+        y0_use[-1] = S0_prop
 
-#             for i in range(mutate_array.shape[0]):
-#                 for j in range(mutate_array.shape[1]):
+        self.y0 = PARAMS.host_growth_initial_area*y0_use
 
-#                     # convert to "fung index" in [0,self.n_k-1]
-#                     f1 = floor(i/self.n_l)  # WAS
-#                     # f1 = floor(j/self.n_l)
-#                     # f1 = i % self.n_l
+    def _get_mutation_array(self):
 
-#                     # convert to "fung index" in [0,self.n_k-1]
-#                     f2 = floor(j/self.n_l)  # WAS
-#                     # f2 = floor(i/self.n_l)
-#                     # f2 = j % self.n_l
+        if self.fung_kernel is None:
+            self.fung_kernel = self._get_kernel(
+                self.k_vec,
+                self.config.mutation_proportion,
+                self.config.mutation_scale_fung,
+            )
 
-#                     # convert to "host index" in [0,self.n_l-1]
-#                     h1 = i % self.n_l  # WAS
-#                     # h1 = floor(i/self.n_l)
-#                     # h1 = j % self.n_l
+        if self.host_kernel is None:
+            self.host_kernel = self._get_kernel(
+                self.l_vec,
+                self.config.mutation_proportion,
+                self.config.mutation_scale_host,
+            )
 
-#                     # convert to "host index" in [0,self.n_l-1]
-#                     h2 = j % self.n_l  # WAS
-#                     # h2 = i % self.n_l
-#                     # h2 = floor(j/self.n_l)
+        if self.fungicide_on and not self.host_plant_on:
+            self.mutation_array = self.fung_kernel
 
-#                     mutate_array[i, j] = fung_ker[f1, f2] * host_ker[h1, h2]
-#                     # mutate_array[j, i] = fung_ker[f1, f2] * host_ker[h1, h2]
+        elif not self.fungicide_on and self.host_plant_on:
+            self.mutation_array = self.host_kernel
 
-#             print('finishing things')
+    def _get_kernel(self, vec, p, mutation_scale):
 
-#             self.mutation_array = mutate_array
+        print('changed to transpose!!!')
 
-#         elif self.fungicide_on and not self.host_plant_on:
-#             self.mutation_array = self.fung_kernel
+        N = len(vec)
 
-#         elif not self.fungicide_on and self.host_plant_on:
-#             self.mutation_array = self.host_kernel
+        kernel = np.zeros((N, N))
 
-#     def _get_kernel(self, vec, p, mutation_scale):
+        for parent in range(N):
+            # some proportion stays at position i
+            not_dispersing = signal.unit_impulse(N, parent)
 
-#         print('changed to transpose!!!')
+            dispersing = self.dispersal(vec, parent, mutation_scale)
 
-#         N = len(vec)
+            kernel[:, parent] = p*dispersing + (1-p)*not_dispersing
 
-#         kernel = np.zeros((N, N))
+        return kernel
 
-#         for parent in range(N):
-#             # some proportion stays at position i
-#             not_dispersing = signal.unit_impulse(N, parent)
+    def dispersal(self, vec, parent_index, mut_scale):
 
-#             dispersing = self.dispersal(vec, parent, mutation_scale)
+        stan_dev = mut_scale**0.5
 
-#             kernel[:, parent] = p*dispersing + (1-p)*not_dispersing
+        edges = edge_values(len(vec))
 
-#         return kernel
+        disp = norm.cdf(edges, loc=vec[parent_index], scale=stan_dev)
 
-#     def dispersal(self, vec, parent_index, mut_scale):
+        dispersing = np.diff(disp)
 
-#         stan_dev = mut_scale**0.5
+        top = 1 - disp[-1]
 
-#         edges = edge_values(len(vec))
+        bottom = disp[0]
 
-#         disp = norm.cdf(edges, loc=vec[parent_index], scale=stan_dev)
+        dispersing[0] += bottom
 
-#         dispersing = np.diff(disp)
+        dispersing[-1] += top
 
-#         top = 1 - disp[-1]
+        return dispersing
 
-#         bottom = disp[0]
+    def _solve_it(self, beta_in, num_sprays, dose):
 
-#         dispersing[0] += bottom
+        strains_dict = {}
 
-#         dispersing[-1] += top
+        trait_vec_dict = {
+            'host': np.asarray(self.l_vec),
+            'fung': np.asarray(self.k_vec),
+        }
 
-#         return dispersing
+        ode_solver = ode(self._ode_system_with_mutation)
 
-#     def _solve_it(self, beta_in, num_sprays, dose):
+        ode_solver.set_integrator('dopri5', max_step=10)
 
-#         strains_dict = {}
+        t_out = np.linspace(PARAMS.T_1, PARAMS.T_end, 100)
+        t_out = list(t_out)
 
-#         trait_vec_dict = {
-#             'host': np.asarray(self.l_vec),
-#             'fung': np.asarray(self.k_vec),
-#         }
+        # += PARAMS.T_1, no longer needed!
+        t_out += [PARAMS.T_2, PARAMS.T_3]
+        t_out = sorted(t_out)
+        t_out = np.asarray(t_out)
 
-#         ode_solver = ode(self._ode_system_with_mutation)
+        y_out = np.zeros((self.y0.shape[0], len(t_out)))
 
-#         ode_solver.set_integrator('dopri5', max_step=10)
+        ode_solver.set_initial_value(self.y0, t_out[0])
 
-#         t_out = np.linspace(PARAMS.T_1, PARAMS.T_end, 100)
-#         t_out = list(t_out)
+        if self.fungicide_on and not self.host_plant_on:
+            # NB looking to match length of active fung trait vector, not host
+            strains_dict['host'] = np.ones(len(trait_vec_dict['fung']))
+            strains_dict['fung'] = trait_vec_dict['fung']
 
-#         # += PARAMS.T_1, no longer needed!
-#         t_out += [PARAMS.T_2, PARAMS.T_3]
-#         t_out = sorted(t_out)
-#         t_out = np.asarray(t_out)
+        elif not self.fungicide_on and self.host_plant_on:
+            # NB looking to match length of active host trait vector, not fung
+            strains_dict['host'] = trait_vec_dict['host']
+            strains_dict['fung'] = np.ones(len(trait_vec_dict['host']))
 
-#         y_out = np.zeros((self.y0.shape[0], len(t_out)))
+        # add other params
+        my_fungicide = Fungicide(num_sprays, dose)
 
-#         ode_solver.set_initial_value(self.y0, t_out[0])
+        host_growth_fn = host_growth_function
 
-#         if self.fungicide_on and self.host_plant_on:
+        ode_solver.set_f_params(
+            beta_in,
+            host_growth_fn,
+            strains_dict,
+            my_fungicide,
+            self.mutation_array
+        )
 
-#             for trait in ['host', 'fung']:
+        for ind, tt in enumerate(t_out[1:]):
+            if ode_solver.successful():
+                y_out[:, ind] = ode_solver.y
+                ode_solver.integrate(tt)
+            else:
+                raise RuntimeError('ode solver unsuccessful')
 
-#                 if trait == 'host':
-#                     vec1 = np.ones(len(trait_vec_dict['fung']))
-#                     vec2 = trait_vec_dict['host']
-#                 else:
-#                     vec1 = trait_vec_dict['fung']
-#                     vec2 = np.ones(len(trait_vec_dict['host']))
+        y_out[:, -1] = ode_solver.y
 
-#                 # distribute these according to the length of the reshaped vector
-#                 trait_effect_array = np.outer(vec1, vec2)
+        return y_out, t_out
 
-#                 strains_dict[trait] = np.reshape(
-#                     trait_effect_array,
-#                     y_out.shape[0]-1,
-#                     order='C'
-#                 )
+    def _generate_new_dists(self, solution, D0_l, D0_k):
 
-#         elif self.fungicide_on and not self.host_plant_on:
-#             # NB looking to match length of active fung trait vector, not host
-#             strains_dict['host'] = np.ones(len(trait_vec_dict['fung']))
-#             strains_dict['fung'] = trait_vec_dict['fung']
+        I_end = normalise(solution[:-1, -1])
 
-#         elif not self.fungicide_on and self.host_plant_on:
-#             # NB looking to match length of active host trait vector, not fung
-#             strains_dict['host'] = trait_vec_dict['host']
-#             strains_dict['fung'] = np.ones(len(trait_vec_dict['host']))
+        n_t_points = solution.shape[1]
 
-#         # add other params
-#         my_fungicide = Fungicide(num_sprays, dose)
+        if self.fungicide_on and not self.host_plant_on:
+            soln_out = np.zeros((self.n_k+1, n_t_points))
+            soln_out[:-1, :] = solution[:-1, :]
 
-#         host_growth_fn = host_growth_function
+            fung_dist_out = np.zeros(self.n_k)
+            fung_dist_out = I_end
+            host_dist_out = D0_l
 
-#         ode_solver.set_f_params(
-#             beta_in,
-#             host_growth_fn,
-#             strains_dict,
-#             my_fungicide,
-#             self.mutation_array
-#         )
+        elif self.host_plant_on and not self.fungicide_on:
+            soln_out = np.zeros((self.n_l+1, n_t_points))
+            soln_out[:-1, :] = solution[:-1, :]
 
-#         for ind, tt in enumerate(t_out[1:]):
-#             if ode_solver.successful():
-#                 y_out[:, ind] = ode_solver.y
-#                 ode_solver.integrate(tt)
-#             else:
-#                 raise RuntimeError('ode solver unsuccessful')
+            host_dist_out = np.zeros(self.n_l)
+            host_dist_out = I_end
+            fung_dist_out = D0_k
 
-#         y_out[:, -1] = ode_solver.y
+        # susceptible tissue
+        soln_out[-1, :] = solution[-1, :]
 
-#         return y_out, t_out
-
-#     def _generate_new_dists(self, solution, D0_l, D0_k):
-
-#         I_end = normalise(solution[:-1, -1])
-
-#         n_t_points = solution.shape[1]
-
-#         if self.host_plant_on and self.fungicide_on:
-#             soln_out, fung_dist_out, host_dist_out = self._dists_fung_and_host(
-#                 solution)
-
-#         elif self.fungicide_on and not self.host_plant_on:
-#             soln_out = np.zeros((self.n_k+1, n_t_points))
-#             soln_out[:-1, :] = solution[:-1, :]
-
-#             fung_dist_out = np.zeros(self.n_k)
-#             fung_dist_out = I_end
-#             host_dist_out = D0_l
-
-#         elif self.host_plant_on and not self.fungicide_on:
-#             soln_out = np.zeros((self.n_l+1, n_t_points))
-#             soln_out[:-1, :] = solution[:-1, :]
-
-#             host_dist_out = np.zeros(self.n_l)
-#             host_dist_out = I_end
-#             fung_dist_out = D0_k
-
-#         # susceptible tissue
-#         soln_out[-1, :] = solution[-1, :]
-
-#         return soln_out, fung_dist_out, host_dist_out
-
-#     def _dists_fung_and_host(self, solution):
-#         I_end = solution[:-1, -1]
-
-#         n_t_points = solution.shape[1]
-
-#         I0_k_end = np.zeros(self.n_k)
-#         I0_l_end = np.zeros(self.n_l)
-
-#         I_end_reshaped = np.reshape(I_end, (self.n_k, self.n_l))
-
-#         I0_k_end = np.asarray(
-#             [sum(I_end_reshaped[k, :]) for k in range(I_end_reshaped.shape[0])]
-#         )
-
-#         I0_l_end = np.asarray(
-#             [sum(I_end_reshaped[:, l]) for l in range(I_end_reshaped.shape[1])]
-#         )
-
-#         fung_dist_out = normalise(I0_k_end)
-#         host_dist_out = normalise(I0_l_end)
-
-#         soln_large_array = np.zeros(((self.n_k, self.n_l, n_t_points)))
-
-#         soln_small_array = np.reshape(
-#             solution[:-1, :],
-#             (I_end_reshaped.shape[0], I_end_reshaped.shape[1], n_t_points),
-#         )
-
-#         soln_large_array = soln_small_array
-
-#         solution_out = np.zeros((self.n_k*self.n_l+1, n_t_points))
-
-#         solution_out[:-1, :] = np.reshape(
-#             soln_large_array,
-#             (self.n_k * self.n_l, n_t_points),
-#         )
-
-#         return solution_out, fung_dist_out, host_dist_out
+        return soln_out, fung_dist_out, host_dist_out
 
 
 #
@@ -608,8 +477,6 @@ from poly2.utils import (
 
 class SimulatorBothTraits:
     """Sets up and runs a single model simulation in the fung AND host case
-
-    Called by RunModel and ModelFitting.
     """
 
     def __init__(

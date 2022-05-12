@@ -7,7 +7,7 @@ dist/
 *ipynb_checkpoints/
 
 # notebooks/*
-*.ipynb
+# *.ipynb
 
 *.log
 

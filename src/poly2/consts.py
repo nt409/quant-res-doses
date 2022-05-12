@@ -17,17 +17,16 @@ ALL_BETAS = np.asarray(
     pd.read_csv('../data/beta_sampled.csv').beta
 )
 
-FUNG_MUTATION_SCALE = float(
+MUTATION_SCALE = float(
     pd.read_csv('../data/mutation_scales.csv')
     .loc[:, ['mutation_scale']]
     .iloc[0]
 )
 
-HOST_MUTATION_SCALE = FUNG_MUTATION_SCALE
-
-
 MUTATION_PROP = (0.5 * (28 + 130) * 1e6) / (0.5 * (2.3 + 10.5) * 1e12)
 
 DEFAULT_P = 0.1
+
+DEFAULT_MUTATION_SCALE = DEFAULT_P * MUTATION_SCALE
 
 FUNG_DECAY_RATE = 0.5 * (6.91e-3 + 1.11e-2)

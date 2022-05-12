@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 from poly2.params import PARAMS
 from poly2.simulator import Simulator
-from poly2.utils import (config_str_to_log, keys_from_config,
-                         run_logger, yield_function)
+from poly2.utils import keys_from_config
+
 
 memory = Memory('../joblib_cache/', verbose=1)
 
@@ -27,6 +27,7 @@ memory = Memory('../joblib_cache/', verbose=1)
 def simulations_run(config,
                     I0_vec_run=None,
                     beta_vec_run=None,
+                    doses=None,
                     verbose=True):
     """Run polygenic model
 
@@ -40,6 +41,9 @@ def simulations_run(config,
 
     beta_vec_run : list/np.array, optional
         Beta values, overrides config.beta_single, by default None
+
+    doses : list/np.array, optional
+        Doses, one per year, by default None
 
     verbose : bool, optional
         Whether to print 'running simulation' or not - fine in general but
@@ -64,6 +68,7 @@ def simulations_run(config,
     return no_joblib_simulations_run(config,
                                      I0_vec_run,
                                      beta_vec_run,
+                                     doses,
                                      verbose)
 
 
@@ -131,48 +136,6 @@ def variable_strategy_run(config, first, second):
     return no_joblib_variable_strategy_run(config, first, second)
 
 
-@memory.cache
-def mutual_protection_run(config):
-    """Mutual protection
-
-    This function returns the disease severities if you take the host/fungicide
-    to evolve as if both were on, but remove the protection offered by
-    the other trait.
-
-    Parameters
-    ----------
-    config : Config
-        NB should only have sprays, host_on as follows:
-        - sprays = [1] OR [2] OR [3]
-        - host_on = [True, False]
-        Should be of type 'multi' - see example below
-
-    Returns
-    -------
-    yield_diff : dict
-        keys like 
-        - spray_Y2_host_Y_without_host
-        each value an np.array with size n_its and n_years (need to check order)
-
-    Example
-    -------
-    >>>config = Config(
-    ...  n_k=100,
-    ...  n_l=100,
-    ...  disease_pressure='med',
-    ...  host_growth=True,
-    ...  cultivar='Hereford',
-    ...  type='multi',
-    ...  replace_cultivars=False,
-    ...  sprays=[2],
-    ...  host_on=[False],
-    ...  n_iterations=5,
-    ... )
-    >>>data = mutual_protection_run(config)
-    """
-    return no_joblib_mutual_protection_run(config)
-
-
 #
 #
 #
@@ -181,6 +144,7 @@ def no_joblib_simulations_run(
     config,
     I0_vec_run=None,
     beta_vec_run=None,
+    doses_run=None,
     verbose=True,
 ):
     """See docs above for joblib version"""
@@ -188,13 +152,14 @@ def no_joblib_simulations_run(
     if verbose:
         print('running simulation')
 
-    run_logger.info(config_str_to_log(config))
-
     if beta_vec_run is None:
-        beta_vec_run = [config.beta_single] * config.n_years
+        beta_vec_run = config.beta_single * np.ones(config.n_years)
 
     if I0_vec_run is None:
-        I0_vec_run = [config.I0_single] * config.n_years
+        I0_vec_run = config.I0_single * np.ones(config.n_years)
+
+    if doses_run is None:
+        doses_run = np.ones(len(beta_vec_run))
 
     config_save = copy.deepcopy(config)
 
@@ -210,17 +175,13 @@ def no_joblib_simulations_run(
         config_save.sprays = [spray]
         config_save.host_on = [host]
 
-        if verbose:
-            run_logger.info('running single run:')
-            run_logger.info(config_str_to_log(config_save))
-
         fungicide_on = False if (host and spray == 0) else True
 
         this_simulation = Simulator(
+            config=config_save,
             host_plant_on=host,
             fungicide_on=fungicide_on,
             number_of_sprays=spray,
-            config=config_save
         )
 
         key = keys_from_config(config_save)[0]
@@ -228,6 +189,7 @@ def no_joblib_simulations_run(
         model_output[key] = this_simulation.run_model(
             I0_vec=I0_vec_run,
             beta_vec=beta_vec_run,
+            doses=doses_run,
         )
 
     return model_output
@@ -248,9 +210,6 @@ def no_joblib_variable_strategy_run(config, spray_first_n, spray_second_n):
 
     for host_on in config.host_on:
 
-        run_logger.info('running variable strategy run:')
-        run_logger.info(config_str_to_log(config))
-
         num_strats = config.n_years + 1
         model_output_list = [[]]*(num_strats)
 
@@ -263,10 +222,10 @@ def no_joblib_variable_strategy_run(config, spray_first_n, spray_second_n):
             spray_vec = np.asarray(spray_vec)
 
             this_simulation = Simulator(
+                config=config,
                 host_plant_on=host_on,
                 fungicide_on=True,
                 custom_sprays_vec=spray_vec,
-                config=config
             )
 
             model_output_list[ii] = this_simulation.run_model(
@@ -281,11 +240,6 @@ def no_joblib_multiple_run(config):
     """See docs for joblib version above"""
 
     print('running multiple runs')
-
-    run_logger.info('running (multiple iterations)')
-    run_logger.info(
-        config_str_to_log(config) + f', its={config.n_iterations}'
-    )
 
     #
     #
@@ -322,145 +276,3 @@ def no_joblib_multiple_run(config):
             dict_of_lists[key].append(model_output_dict[key])
 
     return dict_of_lists
-
-
-# --------------------------------------------------------------------
-
-
-def no_joblib_mutual_protection_run(config):
-    """See docs above for joblib version"""
-
-    print('running mutual protection')
-
-    multi_outputs = multiple_run(config)
-
-    multi_output_keys = keys_from_config(config)
-
-    yield_diff = {}
-
-    for key in multi_output_keys:
-
-        multi_output = multi_outputs[key]
-
-        sev = {}
-
-        sev['without_host'] = []
-        sev['without_fung'] = []
-
-        for trait, key_trait, fung_benefit in zip(
-            ['host', 'fung'],
-            ['host_', 'spray_'],
-            [True, False]
-        ):
-
-            run_logger.info('running mutual protection:')
-            run_logger.info(config_str_to_log(config))
-
-            without_trait = f'without_{trait}'
-
-            # need host/fung to have been on to have anything new to calculate
-            trait_is_off = key.split(key_trait)[1].startswith('N')
-            if trait_is_off:
-                for i in range(len(multi_output)):
-                    sev[without_trait].append(multi_output[i]['dis_sev'])
-
-            else:
-                sev[without_trait] = _find_protection(
-                    config,
-                    multi_output,
-                    key,
-                    fung_benefit=fung_benefit
-                )
-
-            # find yield
-            yield_diff[key + '_' + without_trait] = (
-                np.vectorize(yield_function)(sev[without_trait])
-            )
-
-    return yield_diff
-
-
-def _find_protection(config, multi_output, key, fung_benefit):
-    """Protective effect
-
-    Effect on severities of switching host/fung off, but keeping fung/host dists
-
-    Parameters
-    ----------
-    config : Config
-        See Config docs.
-
-    multi_output : list of dicts
-        e.g. multi_outputs['key']
-
-    key : _type_
-        of form:
-        - spray_N_host_N
-        - spray_Y2_host_N
-
-    fung_benefit : bool
-        whether testing benefit to the fungicide or to the host
-
-    Returns
-    -------
-    _type_
-        _description_
-    """
-
-    print(key, fung_benefit)
-
-    # testing benefit to the fungicide - switch host off
-    if fung_benefit:
-        simulation = Simulator(
-            host_plant_on=False,
-            fungicide_on=True,
-            config=config
-        )
-
-        num_sprays = config.sprays[0]
-
-        if key.startswith('spray_N'):
-            num_sprays = 0
-
-    # testing benefit to the host - 0 sprays
-    else:
-        if 'host_N' in key:
-            simulation = Simulator(
-                host_plant_on=False,
-                fungicide_on=True,
-                config=config
-            )
-
-        else:
-            simulation = Simulator(
-                host_plant_on=True,
-                fungicide_on=False,
-                config=config
-            )
-
-        num_sprays = 0
-
-    sevs_out = []
-
-    for i in range(len(multi_output)):
-        soln = multi_output[i]
-
-        infections_this_run = []
-
-        betas = soln['beta_vec']
-        I0s = soln['I0_vec']
-
-        for year in range(len(betas)):
-
-            _, _, _, _, total_infection = simulation.calculate_ode_soln(
-                soln['fung_dists'][:, year],
-                soln['host_dists'][:, year],
-                I0s[year],
-                betas[year],
-                num_sprays
-            )
-
-            infections_this_run.append(total_infection[-1])
-
-        sevs_out.append(infections_this_run)
-    return sevs_out

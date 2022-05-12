@@ -5,7 +5,13 @@ This file sets up the parameters for the polygenic model
 import numpy as np
 import pandas as pd
 
-from poly2.consts import ALL_BETAS, DEFAULT_BETA, DEFAULT_I0
+from poly2.consts import (
+    ALL_BETAS,
+    DEFAULT_BETA,
+    DEFAULT_I0,
+    DEFAULT_MUTATION_SCALE,
+    MUTATION_PROP
+)
 
 
 # * TOC
@@ -29,13 +35,13 @@ class Config:
         n_l=50,
         #
         n_iterations=None,
-        n_years=25,
+        n_years=15,
         #
         replace_cultivars=False,
         #
-        mutation_proportion=0,
-        mutation_scale_host=None,
-        mutation_scale_fung=None,
+        mutation_proportion=MUTATION_PROP,
+        mutation_scale_host=DEFAULT_MUTATION_SCALE,
+        mutation_scale_fung=DEFAULT_MUTATION_SCALE,
         #
         verbose=True,
     ):

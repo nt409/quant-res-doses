@@ -36,16 +36,16 @@ class Constants:
         )
 
         # # mapping between strat and index
-        # self.strategy_mapping = dict(
-        #     spray_N_host_N=0,
-        #     spray_N_host_Y=1,
-        #     spray_Y1_host_N=2,
-        #     spray_Y1_host_Y=3,
-        #     spray_Y2_host_N=4,
-        #     spray_Y2_host_Y=5,
-        #     spray_Y3_host_N=6,
-        #     spray_Y3_host_Y=7
-        # )
+        self.strategy_mapping = dict(
+            spray_N_host_N=0,
+            spray_N_host_Y=1,
+            spray_Y1_host_N=2,
+            spray_Y1_host_Y=3,
+            spray_Y2_host_N=4,
+            spray_Y2_host_Y=5,
+            spray_Y3_host_N=6,
+            spray_Y3_host_Y=7
+        )
 
 
 PARAMS = Constants()

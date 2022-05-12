@@ -22,38 +22,6 @@ from scipy import signal
 from poly2.consts import DEFAULT_I0, FUNG_DECAY_RATE
 from poly2.params import PARAMS
 
-# ------------------------------------------------------------
-# create logger with 'poly'
-logger = logging.getLogger('poly')
-logger.setLevel(logging.DEBUG)
-# create file handler which logs even debug messages
-fh = logging.FileHandler('./poly.log')
-fh.setLevel(logging.DEBUG)
-# create formatter and add it to the handlers
-formatter = logging.Formatter(
-    '%(asctime)s: %(name)s, %(levelname)s: %(message)s')
-fh.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(fh)
-
-run_logger = logging.getLogger('poly.run')
-fitting_logger = logging.getLogger('poly.fit')
-# ------------------------------------------------------------
-
-
-def config_str_to_log(cfg):
-    return (
-        'Setup: ' +
-        f'mutation=({cfg.mutation_proportion},' +
-        f'{cfg.mutation_scale_fung},{cfg.mutation_scale_fung}), ' +
-        f'HG={cfg.host_growth}, ' +
-        f'repC={cfg.replace_cultivars}, ' +
-        f'nk={cfg.n_k}, ' +
-        f'nl={cfg.n_l}, ' +
-        f'host={cfg.host_on}, ' +
-        f'fung={cfg.sprays}'
-    )
-
 
 def normalise(dist):
     dist = np.asarray(dist)
@@ -349,10 +317,12 @@ def initial_point_distribution(n, mean):
 
 class Fungicide:
 
-    def __init__(self, num_sprays):
+    def __init__(self, num_sprays, dose):
 
         # different for diff fungicides
         self.decay_rate = FUNG_DECAY_RATE
+
+        self.dose = dose
 
         if num_sprays == 1:
             self.sprays_list = [PARAMS.T_2]
@@ -386,7 +356,7 @@ class Fungicide:
 
         for T_spray in self.sprays_list:
             if t > T_spray:
-                concentration += exp(- self.decay_rate*(t-T_spray))
+                concentration += self.dose * exp(- self.decay_rate*(t-T_spray))
 
         if concentration == 0:
             return 1
@@ -439,12 +409,31 @@ def get_host_dist_params(mu, b, config):
     return a_out, b_val
 
 
+def get_host_dist_params_from_config(config):
+    """Find a, b from mean, b from config
+
+    Beta distribution in effect space [0,1]
+
+    See en.wikipedia.org/wiki/Beta_distribution
+
+    Parameters
+    ----------
+    config : Config
+        see Config docs
+
+    """
+
+    mu_val = config.l_mu
+    b_val = config.l_b
+
+    a_out = (b_val*mu_val)/(1-mu_val)
+
+    return a_out, b_val
+
+
 def get_fung_dist_params(mu, b, config):
     """Find a, b from mean, b with config fallback if a/b not provided
 
-    NB is now BETA dist not gamma
-
-    WAS
     Gamma distribution in curvature space
 
     NB shape/rate parameterisation from wikipedia:
@@ -487,5 +476,34 @@ def get_fung_dist_params(mu, b, config):
     return a_out, b_val
 
 
+def get_fung_dist_params_from_config(config):
+    """Find a, b from mean, b from config
+
+    Gamma distribution in curvature space
+
+    NB shape/rate parameterisation from wikipedia:
+    - en.wikipedia.org/wiki/Gamma_distribution
+    - docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html
+
+    This means mu = alpha/beta
+    beta = 1/scale
+
+    Parameters
+    ----------
+    config : Config
+        see Config docs
+
+    """
+
+    mu_val = config.k_mu
+    b_val = config.k_b
+
+    # GAMMA
+    a_out = mu_val*b_val
+
+    return a_out, b_val
+
+
 def get_dist_mean(dist, traitvec):
-    return np.asarray([np.dot(dist[:, yr], traitvec) for yr in range(dist.shape[1])])
+    return np.asarray([np.dot(dist[:, yr], traitvec)
+                       for yr in range(dist.shape[1])])

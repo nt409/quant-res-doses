@@ -827,8 +827,7 @@ class SimulatorBothTraits:
         dydt = np.zeros(len(self.y0))
 
         # host effect is same as value of strain
-        # host_effect_vec = np.asarray(self.l_vec)
-        host_effect_vec = np.ones(len(self.l_vec))
+        host_effect_vec = np.asarray(self.l_vec)
 
         # fung effect is value of strain into fungicide effect function,
         # which depends on dose
@@ -843,44 +842,27 @@ class SimulatorBothTraits:
         I_array = np.reshape(old_I, (self.n_k, self.n_l))
 
         I_fung = I_array.sum(axis=1)
-
         I_host = I_array.sum(axis=0)
 
         I_fung_mutated = np.matmul(fung_kernel, I_fung)
-
         I_host_mutated = np.matmul(host_kernel, I_host)
 
         # scale both of these as a proportion
-        I_fung_mutated = I_fung_mutated / sum(I_fung_mutated)
-        I_host_mutated = I_host_mutated / sum(I_host_mutated)
-
-        I_fung_out = fung_effect_vec * I_fung_mutated
-
-        I_host_out = host_effect_vec * I_host_mutated
+        p_fung_mutated = I_fung_mutated / I_fung_mutated.sum()
+        p_host_mutated = I_host_mutated / I_host_mutated.sum()
 
         # think of as I_scaled * proportion in k bin * proportion in l bin
         scale = sum(I_fung)
 
-        disease_states = np.outer(I_fung_out, I_host_out) * scale
-
-        print(I_array.sum().sum())
-        print((1/I_fung_mutated.sum()) *
-              np.outer(I_fung_mutated, I_host_mutated).sum().sum())
-        print(disease_states.sum().sum())
-        print('ok')
+        disease_states = np.outer(
+            fung_effect_vec * p_fung_mutated,
+            host_effect_vec * p_host_mutated
+        ) * scale
 
         disease_states_use = np.reshape(
             disease_states,
             (self.n_k*self.n_l)
         )
-
-        print(sum(I_fung))
-        print(sum(I_fung_mutated))
-        print('ok F')
-
-        print(sum(I_host))
-        print(sum(I_host_mutated))
-        print('ok H')
 
         dydt[:-1] = beta * S * disease_states_use
 
@@ -965,13 +947,6 @@ class SimulatorBothTraits:
 
     def _solve_it(self, beta_in, num_sprays, dose):
 
-        # strains_dict = {}
-
-        # trait_vec_dict = {
-        #     'host': np.asarray(self.l_vec),
-        #     'fung': np.asarray(self.k_vec),
-        # }
-
         ode_solver = ode(self._ode_system_host_and_fung)
 
         ode_solver.set_integrator('dopri5', max_step=10)
@@ -979,7 +954,6 @@ class SimulatorBothTraits:
         t_out = np.linspace(PARAMS.T_1, PARAMS.T_end, 100)
         t_out = list(t_out)
 
-        # += PARAMS.T_1, no longer needed!
         t_out += [PARAMS.T_2, PARAMS.T_3]
         t_out = sorted(t_out)
         t_out = np.asarray(t_out)
@@ -987,24 +961,6 @@ class SimulatorBothTraits:
         y_out = np.zeros((self.y0.shape[0], len(t_out)))
 
         ode_solver.set_initial_value(self.y0, t_out[0])
-
-        # for trait in ['host', 'fung']:
-
-        #     if trait == 'host':
-        #         vec1 = np.ones(len(trait_vec_dict['fung']))
-        #         vec2 = trait_vec_dict['host']
-        #     else:
-        #         vec1 = trait_vec_dict['fung']
-        #         vec2 = np.ones(len(trait_vec_dict['host']))
-
-        #     # distribute these according to the length of the reshaped vector
-        #     trait_effect_array = np.outer(vec1, vec2)
-
-        #     strains_dict[trait] = np.reshape(
-        #         trait_effect_array,
-        #         y_out.shape[0]-1,
-        #         order='C'
-        #     )
 
         # add other params
         my_fungicide = Fungicide(num_sprays, dose)
@@ -1035,11 +991,11 @@ class SimulatorBothTraits:
 
         n_t_points = solution.shape[1]
 
-        I_end_reshaped = np.reshape(I_end, (self.n_k, self.n_l))
+        I_end_array = np.reshape(I_end, (self.n_k, self.n_l))
 
-        I0_k_end = I_end_reshaped.sum(axis=1)
+        I0_k_end = I_end_array.sum(axis=1)
 
-        I0_l_end = I_end_reshaped.sum(axis=0)
+        I0_l_end = I_end_array.sum(axis=0)
 
         fung_dist_out = normalise(I0_k_end)
         host_dist_out = normalise(I0_l_end)
@@ -1048,7 +1004,7 @@ class SimulatorBothTraits:
 
         soln_small_array = np.reshape(
             solution[:-1, :],
-            (I_end_reshaped.shape[0], I_end_reshaped.shape[1], n_t_points),
+            (I_end_array.shape[0], I_end_array.shape[1], n_t_points),
         )
 
         soln_large_array = soln_small_array

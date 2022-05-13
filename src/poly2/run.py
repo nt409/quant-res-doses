@@ -12,7 +12,7 @@ from joblib import Memory
 from tqdm import tqdm
 
 from poly2.params import PARAMS
-from poly2.simulator import Simulator
+from poly2.simulator import SimulatorBothTraits, SimulatorOneTrait
 from poly2.utils import keys_from_config
 
 

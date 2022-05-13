@@ -18,7 +18,7 @@ ALL_BETAS = np.asarray(
 )
 
 MUTATION_SCALE = float(
-    pd.read_csv('../data/mutation_scales.csv')
+    pd.read_csv('../data/mutation_scale.csv')
     .loc[:, ['mutation_scale']]
     .iloc[0]
 )

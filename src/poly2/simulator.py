@@ -1,5 +1,3 @@
-from math import floor
-
 import numpy as np
 from scipy import signal
 from scipy.integrate import ode

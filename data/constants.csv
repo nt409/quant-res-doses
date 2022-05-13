@@ -1,0 +1,20 @@
+Parameter,Value,Units,,Explanation,Source,Notes
+,,,,,,
+Yield gradient,-0.4957159,,,so that 1+yield_gradient is the yield at 100% disease pressure,Fitted: sonderborg relationship R file,check what time point this is for! Might need to alter
+Max yield,10.2401,Ton/Ha,,,Fitted: sonderborg relationship R file,check what time point this is for! Might need to alter
+,,,,,,
+Price of wheat,117.14,£/Tonne,,,https://bsppjournals.onlinelibrary.wiley.com/doi/epdf/10.1111/ppa.13155,
+,,,,,,
+Cost 1 spray,42.4,£/ha,,32.4 per spray + £10 per spray,https://bsppjournals.onlinelibrary.wiley.com/doi/epdf/10.1111/ppa.13155,
+Cost 2 sprays,84.8,£/ha,,,https://bsppjournals.onlinelibrary.wiley.com/doi/epdf/10.1111/ppa.13155,
+Cost 3 sprays,127.2,£/ha,,,https://bsppjournals.onlinelibrary.wiley.com/doi/epdf/10.1111/ppa.13155,
+,,,,,,
+Mixture Effect (Host),0.894,,,"""Cultivar mixtures reduced STB sev by 10.6%""",https://www.biorxiv.org/content/10.1101/658575v1,
+,,,,,,
+Host_growth_rate,0.0126,,,,"Hobbelen, Elderfield, etc",
+Host_growth_initial_area,0.012195121951219514,,,0.05/4.1,"NB Elderfield used 4.2 not 4.1, dunno why??",
+,,,,,,
+T1,1456,degree days,,"Start as per van den berg, not Elderfield",,
+T2,1700,degree days,,,,
+T3,2066,degree days,,,,
+T_end,2515,degree days,,"GS75 is final time. used to use GS87 = 2900. Have mapped GS75 -> 2690, used to be 2500 (still approx!)",Interpolated,

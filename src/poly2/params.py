@@ -4,7 +4,7 @@ import pandas as pd
 class Constants:
     def __init__(self):
         """
-        Economic params, running params, setup etc
+        Running params, setup etc
         """
 
         consts = pd.read_csv('../data/constants.csv')

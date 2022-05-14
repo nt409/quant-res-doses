@@ -14,14 +14,6 @@ from poly2.consts import (
 )
 
 
-# * TOC
-
-# Config
-# Fitting
-
-# ------------------------------------------------------------
-
-
 class Config:
     def __init__(
         self,
@@ -222,5 +214,3 @@ class Config:
         )
 
         print(str_out)
-
-        # return str_out

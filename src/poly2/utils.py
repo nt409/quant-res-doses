@@ -79,14 +79,6 @@ def find_soln_given_beta_and_no_control(beta_, I0=DEFAULT_I0, t_vals=None):
         PARAMS.host_growth_initial_area*I0
     ])
 
-    # A_0 = (
-    #     1 -
-    #     (1 - PARAMS.host_growth_initial_area) *
-    #     exp(- PARAMS.host_growth_rate * (PARAMS.T_1 - 1212))
-    # )
-
-    # y0 = y0_unscaled*A_0
-
     solver = ode(ode_simple)
     solver.set_integrator('dopri5', max_step=10)
 

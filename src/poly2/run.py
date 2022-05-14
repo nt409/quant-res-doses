@@ -1,7 +1,8 @@
 """
 Functions to run model - wrapped in run.py
 
-NB need to document!
+Convenient wrapper for running model, can instead directly run
+SimulatorOneTrait or SimulatorBothTraits
 """
 
 import copy

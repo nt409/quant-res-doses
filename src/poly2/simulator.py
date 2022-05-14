@@ -191,10 +191,7 @@ class SimulatorOneTrait:
         # calculate yield and economic yield
         yield_vec = [yield_function(sev) for sev in dis_sev]
 
-        econ = [
-            economic_yield_function([yield_], int(spray_num))[0]
-            for yield_, spray_num in zip(yield_vec, sprays_vec_use)
-        ]
+        econ = economic_yield_function(yield_vec, sprays_vec_use, doses)
 
         return {
             'fung_dists': fung_dists,
@@ -595,10 +592,7 @@ class SimulatorBothTraits:
         # calculate yield and economic yield
         yield_vec = [yield_function(sev) for sev in dis_sev]
 
-        econ = [
-            economic_yield_function([yield_], int(spray_num))[0]
-            for yield_, spray_num in zip(yield_vec, sprays_vec_use)
-        ]
+        econ = economic_yield_function(yield_vec, sprays_vec_use, doses)
 
         return {
             'fung_dists': fung_dists,

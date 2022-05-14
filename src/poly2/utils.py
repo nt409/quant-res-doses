@@ -18,8 +18,8 @@ from scipy.optimize import minimize
 from scipy.integrate import ode
 from scipy import signal
 
-from polymodel.consts import DEFAULT_I0, FUNG_DECAY_RATE
-from polymodel.params import PARAMS
+from poly2.consts import DEFAULT_I0, FUNG_DECAY_RATE
+from poly2.params import PARAMS
 
 
 def normalise(dist):
@@ -188,25 +188,35 @@ def yield_function(sev):
     return out
 
 
-def economic_yield_function(yield_vec, n_sprays):
-    spray_cost = PARAMS.spray_costs[str(n_sprays)]
-    profit = [PARAMS.wheat_price*yy - spray_cost for yy in yield_vec]
+def economic_yield_function(yield_vec, sprays_vec, doses):
+
+    yield_vec = np.array(yield_vec)
+    sprays_vec = np.array(sprays_vec)
+    doses = np.array(doses)
+
+    cost_application = PARAMS.application_cost_per_spray * sprays_vec
+    cost_fungicide = PARAMS.chemical_cost_per_spray * sprays_vec * doses
+
+    revenue = yield_vec * PARAMS.wheat_price
+
+    profit = revenue - cost_application - cost_fungicide
+
     return profit
 
 
-def keys_from_config(config_in):
+# def keys_from_config(config_in):
 
-    sprays = list(map(str, config_in.sprays))
-    host = ['Y' if hh else 'N' for hh in config_in.host_on]
+#     sprays = list(map(str, config_in.sprays))
+#     host = ['Y' if hh else 'N' for hh in config_in.host_on]
 
-    keys = []
+#     keys = []
 
-    for spray, host in itertools.product(sprays, host):
+#     for spray, host in itertools.product(sprays, host):
 
-        spray_str = 'N' if spray == '0' else f'Y{spray}'
-        keys.append(f'spray_{spray_str}_host_{host}')
+#         spray_str = 'N' if spray == '0' else f'Y{spray}'
+#         keys.append(f'spray_{spray_str}_host_{host}')
 
-    return keys
+#     return keys
 #
 #
 
@@ -240,8 +250,6 @@ def initial_fung_dist(n, a, b):
 
 def gamma_dist(n, a, b):
     """Gamma distribution for fungicide curvatures
-
-    NO LONGER USED?
 
     See
     - en.wikipedia.org/wiki/Gamma_distribution

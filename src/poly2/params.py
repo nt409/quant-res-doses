@@ -13,12 +13,10 @@ class Constants:
             consts[consts['Parameter'] == 'Price of wheat'].Value
         )
 
-        self.spray_costs = {
-            '0': 0,
-            '1': float(consts[consts['Parameter'] == 'Cost 1 spray'].Value),
-            '2': float(consts[consts['Parameter'] == 'Cost 2 sprays'].Value),
-            '3': float(consts[consts['Parameter'] == 'Cost 3 sprays'].Value)
-        }
+        self.chemical_cost_per_spray = float(
+            consts[consts['Parameter'] == 'cost_per_spray_fungicide'].Value)
+        self.application_cost_per_spray = float(
+            consts[consts['Parameter'] == 'cost_per_spray_application'].Value)
 
         # times
         self.T_1 = float(consts[consts['Parameter'] == 'T1'].Value)

@@ -12,8 +12,8 @@
       "**/setup.cfg": true,
       "**/joblib_cache/": true,
       "**/logs/": true,
-      "**/figures/": true
-      // "**/outputs/": true
+      "**/figures/": true,
+      "*.xlsx": true
     }
   }
 }

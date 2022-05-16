@@ -306,6 +306,12 @@ def initial_point_distribution(n, mean):
     return out
 
 
+#
+#
+#
+# print('FUNGICIDE NO LONGER DECAYS!!!')
+
+
 class Fungicide:
 
     def __init__(self, num_sprays, dose):
@@ -346,8 +352,14 @@ class Fungicide:
         concentration = 0
 
         for T_spray in self.sprays_list:
+
+            # WITH DECAY
             if t > T_spray:
-                concentration += self.dose * exp(- self.decay_rate*(t-T_spray))
+                concentration += self.dose * exp(-self.decay_rate*(t-T_spray))
+
+            # # !!! NO DECAY
+            # if t > T_spray and t < T_spray+240:
+            #     concentration = self.dose
 
         if concentration == 0:
             return 1

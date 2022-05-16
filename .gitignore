@@ -13,6 +13,8 @@ dist/
 # notebooks/*
 # *.ipynb
 
+*.xlsx
+
 *.DS_Store
 
 *.log

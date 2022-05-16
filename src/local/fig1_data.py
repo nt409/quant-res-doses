@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
 from poly2.config import Config
-from poly2.consts import MUTATION_PROP
 from poly2.run import no_joblib_simulations_run
 from poly2.utils import get_dist_mean, get_dist_var
 
@@ -19,14 +19,20 @@ def main(n_years=15):
     )
 
     # cmh.mutation_proportion = 2e-1
-    cmh.mutation_proportion = 0
+
+    # print('Mutation is off!!!')
+
+    # cmh.mutation_proportion = 0
+    # cmh.mutation_scale_host = 1e-5
+    # cmh.mutation_scale_fung = 1e-5
 
     out = pd.DataFrame()
 
-    # doses = np.linspace(0.1, 1, 10)
-    doses = [0.5, 1]
+    doses = np.linspace(0.1, 1, 10)
+    # doses = [0.5, 1]
+    # doses = [1]
 
-    for dose in doses:
+    for dose in tqdm(doses):
 
         run_output = no_joblib_simulations_run(
             cmh,

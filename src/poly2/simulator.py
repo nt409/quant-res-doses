@@ -259,6 +259,12 @@ class SimulatorOneTrait:
 
         dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states)
 
+        # # !!! below change makes density independent
+
+        # dydt[:-1] = beta * disease_states
+
+        # dydt[-1] = - beta * sum(disease_states)
+
         return dydt
 
     def _get_y0(self, I0_in, D0_l, D0_k):
@@ -721,8 +727,6 @@ class SimulatorBothTraits:
         )
 
     def _get_kernel(self, vec, p, mutation_scale):
-
-        print('changed to transpose!!!')
 
         N = len(vec)
 

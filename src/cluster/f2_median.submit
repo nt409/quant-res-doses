@@ -17,7 +17,7 @@
 #SBATCH --cpus-per-task=1 
 #! Estimated runtime: hh:mm:ss (job is force-stopped after if exceeded):
 #! less than 12 hours on SL3 (non-paid)
-#SBATCH --time=4:59:00
+#SBATCH --time=10:59:00
 #! Estimated maximum memory needed (job is force-stopped if exceeded):
 #! Never request less than 5980mb of memory. 
 #! RAM is allocated in ~5980mb blocks, you are charged per block used, 

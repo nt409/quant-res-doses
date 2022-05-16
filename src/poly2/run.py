@@ -26,8 +26,8 @@ memory = Memory('../joblib_cache/', verbose=1)
 
 @memory.cache
 def simulations_run(config,
-                    I0_vec_run=None,
-                    beta_vec_run=None,
+                    I0s=None,
+                    betas=None,
                     doses=None,
                     verbose=True):
     """Run polygenic model
@@ -37,10 +37,10 @@ def simulations_run(config,
     config : Config (see config classes)
         _description_
 
-    I0_vec_run : list/np.array, optional
+    I0s : list/np.array, optional
         I0 values, overrides config.I0_single/config.I0_multi, by default None
 
-    beta_vec_run : list/np.array, optional
+    betas : list/np.array, optional
         Beta values, overrides config.beta_single, by default None
 
     doses : list/np.array, optional
@@ -55,7 +55,7 @@ def simulations_run(config,
     model_output : dict
         key is of the form:
         - spray_N_host_N
-        - spray_Y1_host_Y
+        - spray_1_host_Y
 
     Example
     -------
@@ -67,14 +67,14 @@ def simulations_run(config,
     >>>data = simulations_run(config_single)
     """
     return no_joblib_simulations_run(config,
-                                     I0_vec_run,
-                                     beta_vec_run,
+                                     I0s,
+                                     betas,
                                      doses,
                                      verbose)
 
 
 @memory.cache
-def multiple_run(config):
+def multiple_run(config, doses=None):
     """Multiple runs
 
     Uses varying beta.
@@ -83,6 +83,8 @@ def multiple_run(config):
     ----------
     config : Config
         see Config docs
+    doses : list/np.array, optional
+        Doses, one per year, by default None
 
     Returns
     -------
@@ -101,7 +103,7 @@ def multiple_run(config):
     ... )
     >>>data = multiple_run(config)
     """
-    return no_joblib_multiple_run(config)
+    return no_joblib_multiple_run(config, doses)
 
 #
 #
@@ -110,9 +112,9 @@ def multiple_run(config):
 
 def no_joblib_simulations_run(
     config,
-    I0_vec_run=None,
-    beta_vec_run=None,
-    doses_run=None,
+    I0s=None,
+    betas=None,
+    doses=None,
     verbose=True,
 ):
     """See docs above for joblib version"""
@@ -120,14 +122,14 @@ def no_joblib_simulations_run(
     if verbose:
         print('running simulation')
 
-    if beta_vec_run is None:
-        beta_vec_run = config.beta_single * np.ones(config.n_years)
+    if betas is None:
+        betas = config.beta_single * np.ones(config.n_years)
 
-    if I0_vec_run is None:
-        I0_vec_run = config.I0_single * np.ones(config.n_years)
+    if I0s is None:
+        I0s = config.I0_single * np.ones(config.n_years)
 
-    if doses_run is None:
-        doses_run = np.ones(len(beta_vec_run))
+    if doses is None:
+        doses = np.ones(len(betas))
 
     config_save = copy.deepcopy(config)
 
@@ -162,15 +164,15 @@ def no_joblib_simulations_run(
         key = keys_from_config(config_save)[0]
 
         model_output[key] = this_simulation.run_model(
-            I0_vec=I0_vec_run,
-            beta_vec=beta_vec_run,
-            doses=doses_run,
+            I0s=I0s,
+            betas=betas,
+            doses=doses,
         )
 
     return model_output
 
 
-def no_joblib_multiple_run(config):
+def no_joblib_multiple_run(config, doses=None):
     """See docs for joblib version above"""
 
     print('running multiple runs')
@@ -196,13 +198,14 @@ def no_joblib_multiple_run(config):
 
     for ii in tqdm(range(config.n_iterations)):
 
-        beta_vec_run = np.asarray(betas_sample_from[ii, :])
-        I0_vec_run = config.I0_single * np.ones(len(beta_vec_run))
+        betas = np.asarray(betas_sample_from[ii, :])
+        I0s = config.I0_single * np.ones(len(betas))
 
         model_output_dict = no_joblib_simulations_run(
             config,
-            I0_vec_run,
-            beta_vec_run,
+            I0s,
+            betas,
+            doses,
             verbose=False
         )
 

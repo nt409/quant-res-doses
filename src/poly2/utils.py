@@ -213,7 +213,7 @@ def keys_from_config(config_in):
 
     for spray, host in itertools.product(sprays, host):
 
-        spray_str = 'N' if spray == '0' else f'Y{spray}'
+        spray_str = 'N' if spray == '0' else spray
         keys.append(f'spray_{spray_str}_host_{host}')
 
     return keys

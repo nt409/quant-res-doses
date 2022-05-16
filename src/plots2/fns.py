@@ -141,7 +141,7 @@ def generate_dists(data, config, scale_val=1):
 
     Example
     -------
-    >>>dists = generate_dists(data_single['spray_Y2_host_N'], conf_sing, 2)
+    >>>dists = generate_dists(data_single['spray_2_host_N'], conf_sing, 2)
     """
     EVS = {
         'host': edge_values(config.n_l),
@@ -263,7 +263,7 @@ def arrange_as_data_frame(data, variable):
     Parameters
     ----------
     data : list
-        e.g. multi_output['spray_Y2_host_N']
+        e.g. multi_output['spray_2_host_N']
 
     variable : str
         e.g. 'dis_sev'
@@ -296,7 +296,7 @@ def dist_means_as_df(data, variable, conf):
     Parameters
     ----------
     data : list
-        e.g. multi_output['spray_Y2_host_N']
+        e.g. multi_output['spray_2_host_N']
 
     variable : str
         'host' or 'fung'

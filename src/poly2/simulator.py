@@ -79,15 +79,15 @@ class SimulatorOneTrait:
         #
         #
 
-    def run_model(self, I0_vec, beta_vec, doses=None):
+    def run_model(self, I0s, betas, doses=None):
         """_summary_
 
         Parameters
         ----------
-        I0_vec : np.array/list
-            A single I0 value per year
-        beta_vec : np.array/list
-            A single beta value per year
+        I0s : np.array/list
+            An I0 value per year
+        betas : np.array/list
+            An beta value per year
         doses : np.array/list
             A vector of dose values
 
@@ -101,8 +101,8 @@ class SimulatorOneTrait:
             - n_k: int
             - n_l: int
 
-            - I0_vec: np.array, shape (n_years, )
-            - beta_vec: np.array, shape (n_years, )
+            - I0s: np.array, shape (n_years, )
+            - betas: np.array, shape (n_years, )
 
             - t: np.array, shape (n_timepoints, )
             - y: np.array, shape (1+ [n_k OR n_l OR n_k*n_l], n_t, n_years)
@@ -115,22 +115,22 @@ class SimulatorOneTrait:
         """
 
         if doses is None:
-            doses = np.ones(len(beta_vec))
+            doses = np.ones(len(betas))
 
         replace_cultivar_array = self.config_o.replace_cultivars
 
-        fung_dists = np.zeros((self.n_k, len(beta_vec)+1))
-        host_dists = np.zeros((self.n_l, len(beta_vec)+1))
+        fung_dists = np.zeros((self.n_k, len(betas)+1))
+        host_dists = np.zeros((self.n_l, len(betas)+1))
 
         fung_dists[:, 0] = self.initial_k_dist
         host_dists[:, 0] = self.initial_l_dist
 
-        dis_sev = np.zeros(len(beta_vec))
+        dis_sev = np.zeros(len(betas))
 
         if self.custom_sprays_vec is not None:
             sprays_vec_use = self.custom_sprays_vec
         else:
-            sprays_vec_use = self.number_of_sprays*np.ones(len(beta_vec))
+            sprays_vec_use = self.number_of_sprays*np.ones(len(betas))
 
         self._get_mutation_kernels()
         #
@@ -140,15 +140,15 @@ class SimulatorOneTrait:
         ) = self.calculate_ode_soln(
             fung_dists[:, 0],
             host_dists[:, 0],
-            I0_vec[0],
-            beta_vec[0],
+            I0s[0],
+            betas[0],
             sprays_vec_use[0],
             doses[0],
         )
 
         # get shape of solution arrays from the output
-        sol_list = np.zeros((sol.shape[0], sol.shape[1], len(beta_vec)))
-        total_I = np.zeros((len(t), len(beta_vec)))
+        sol_list = np.zeros((sol.shape[0], sol.shape[1], len(betas)))
+        total_I = np.zeros((len(t), len(betas)))
 
         # set the first year
         sol_list[:, :, 0] = sol
@@ -163,8 +163,8 @@ class SimulatorOneTrait:
 
         #
         # calculate the rest of the years
-        # for yr in tqdm(range(1, len(beta_vec))):
-        for yr in range(1, len(beta_vec)):
+        # for yr in tqdm(range(1, len(betas))):
+        for yr in range(1, len(betas)):
 
             (
                 sol_list[:, :, yr], t, fung_dists[:, yr+1],
@@ -172,8 +172,8 @@ class SimulatorOneTrait:
             ) = self.calculate_ode_soln(
                 fung_dists[:, yr],
                 host_dists[:, yr],
-                I0_vec[yr],
-                beta_vec[yr],
+                I0s[yr],
+                betas[yr],
                 sprays_vec_use[yr],
                 doses[yr],
             )
@@ -200,8 +200,8 @@ class SimulatorOneTrait:
             'n_l': self.n_l,
             'k_vec': self.k_vec,
             'l_vec': self.l_vec,
-            'I0_vec': I0_vec,
-            'beta_vec': beta_vec,
+            'I0s': I0s,
+            'betas': betas,
             't': t,
             'y': sol_list,
             'total_I': total_I,
@@ -480,14 +480,14 @@ class SimulatorBothTraits:
         #
         #
 
-    def run_model(self, I0_vec, beta_vec, doses=None):
+    def run_model(self, I0s, betas, doses=None):
         """_summary_
 
         Parameters
         ----------
-        I0_vec : np.array/list
+        I0s : np.array/list
             A vector of I0 values
-        beta_vec : np.array/list
+        betas : np.array/list
             A vector of beta values
         doses : np.array/list
             A vector of dose values
@@ -502,8 +502,8 @@ class SimulatorBothTraits:
             - n_k: int
             - n_l: int
 
-            - I0_vec: np.array, shape (n_years, )
-            - beta_vec: np.array, shape (n_years, )
+            - I0s: np.array, shape (n_years, )
+            - betas: np.array, shape (n_years, )
 
             - t: np.array, shape (n_timepoints, )
             - y: np.array, shape (1+ [n_k OR n_l OR n_k*n_l], n_t, n_years)
@@ -516,22 +516,22 @@ class SimulatorBothTraits:
         """
 
         if doses is None:
-            doses = np.ones(len(beta_vec))
+            doses = np.ones(len(betas))
 
         replace_cultivar_array = self.config_b.replace_cultivars
 
-        fung_dists = np.zeros((self.n_k, len(beta_vec)+1))
-        host_dists = np.zeros((self.n_l, len(beta_vec)+1))
+        fung_dists = np.zeros((self.n_k, len(betas)+1))
+        host_dists = np.zeros((self.n_l, len(betas)+1))
 
         fung_dists[:, 0] = self.initial_k_dist
         host_dists[:, 0] = self.initial_l_dist
 
-        dis_sev = np.zeros(len(beta_vec))
+        dis_sev = np.zeros(len(betas))
 
         if self.custom_sprays_vec is not None:
             sprays_vec_use = self.custom_sprays_vec
         else:
-            sprays_vec_use = self.number_of_sprays*np.ones(len(beta_vec))
+            sprays_vec_use = self.number_of_sprays*np.ones(len(betas))
 
         self._get_kernels()
         #
@@ -541,15 +541,15 @@ class SimulatorBothTraits:
         ) = self.calculate_ode_soln(
             fung_dists[:, 0],
             host_dists[:, 0],
-            I0_vec[0],
-            beta_vec[0],
+            I0s[0],
+            betas[0],
             sprays_vec_use[0],
             doses[0],
         )
 
         # get shape of solution arrays from the output
-        sol_list = np.zeros((sol.shape[0], sol.shape[1], len(beta_vec)))
-        total_I = np.zeros((len(t), len(beta_vec)))
+        sol_list = np.zeros((sol.shape[0], sol.shape[1], len(betas)))
+        total_I = np.zeros((len(t), len(betas)))
 
         # set the first year
         sol_list[:, :, 0] = sol
@@ -564,8 +564,8 @@ class SimulatorBothTraits:
 
         #
         # calculate the rest of the years
-        # for yr in tqdm(range(1, len(beta_vec))):
-        for yr in range(1, len(beta_vec)):
+        # for yr in tqdm(range(1, len(betas))):
+        for yr in range(1, len(betas)):
 
             (
                 sol_list[:, :, yr], t, fung_dists[:, yr+1],
@@ -573,8 +573,8 @@ class SimulatorBothTraits:
             ) = self.calculate_ode_soln(
                 fung_dists[:, yr],
                 host_dists[:, yr],
-                I0_vec[yr],
-                beta_vec[yr],
+                I0s[yr],
+                betas[yr],
                 sprays_vec_use[yr],
                 doses[yr],
             )
@@ -601,8 +601,8 @@ class SimulatorBothTraits:
             'n_l': self.n_l,
             'k_vec': self.k_vec,
             'l_vec': self.l_vec,
-            'I0_vec': I0_vec,
-            'beta_vec': beta_vec,
+            'I0s': I0s,
+            'betas': betas,
             't': t,
             'y': sol_list,
             'total_I': total_I,

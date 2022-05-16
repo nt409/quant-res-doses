@@ -14,6 +14,7 @@ Create an anaconda virtual environment:
 conda create -n myenvname python=3.9.0 -p /home/nt409/software/conda_envs/hrhr_env --copy
 
 # or
+conda create -n poly2_env python=3.8.12
 conda create -n polygenic_env python=3.9.0
 ```
 
@@ -23,6 +24,27 @@ Install any python modules required inside the environment:
 
 ```bash
 conda install -y -c conda-forge iris=2.4.0 -p /home/nt409/software/conda_envs/hrhr_env --copy
+```
+
+To clone/copy an existing conda environment
+
+```bash
+ conda create --name poly_env2 --clone polygenic_env
+```
+
+Or create new env from environment.yml file (NB had issues last time with this
+on cluster)
+
+```bash
+conda env create -f environment.yml
+```
+
+See `https://shandou.medium.com/export-and-create-conda-environment-with-yml-5de619fe5a2`.
+
+To see list of conda envs:
+
+```bash
+conda info --envs
 ```
 
 ## Using a conda env:

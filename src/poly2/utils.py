@@ -368,7 +368,51 @@ def truncated_exp_pdf(x, lambd):
 
 
 def get_dist_mean(dist, traitvec):
-    return np.asarray([np.dot(dist[:, yr], traitvec) for yr in range(dist.shape[1])])
+    """Get vector of fung or host distribution mean each year
+
+    Parameters
+    ----------
+    dist : np.array
+        e.g. output['spray_1_host_N']['fung_dists']
+    traitvec : np.array
+        output['spray_1_host_N']['k_vec']
+
+    Returns
+    -------
+    out : np.array
+        length = number of years in dist, which includes year 0 and N
+    """
+    means = np.asarray([np.dot(dist[:, yr], traitvec)
+                       for yr in range(dist.shape[1])])
+    return means
+
+
+def get_dist_var(dist, traitvec):
+    """Dist variance
+
+    Parameters
+    ----------
+    dist : np.array
+        e.g. output['spray_1_host_N']['fung_dists']
+    traitvec : np.array
+        output['spray_1_host_N']['k_vec']
+
+    Returns
+    -------
+    out : np.array
+        length = number of years in dist, which includes year 0 and N
+    """
+    means = get_dist_mean(dist, traitvec)
+
+    trait_n = dist.shape[0]
+    n_years = dist.shape[1]
+
+    variances = np.zeros(n_years)
+    for yy in range(n_years):
+        for dd in range(trait_n):
+            variances[yy] += dist[dd, yy]*(traitvec[dd] - means[yy])**2
+
+    return variances
 
 
 def get_host_dist_params_from_config(config):

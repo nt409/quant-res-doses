@@ -52,7 +52,7 @@ def main(
 
     out = out.reset_index(drop=True)
 
-    conf_str = f'{run_index}_{cmh.n_k}_{cmh.n_l}'
+    conf_str = f'{run}_{cmh.n_k}_{cmh.n_l}'
     out.to_csv(f'../outputs/fig2_{conf_str}.csv')
 
     return None

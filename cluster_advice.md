@@ -127,3 +127,9 @@ If happy to delete these, then go ahead with
 find . -name "*.err" -type f -delete
 find . -name "*.out" -type f -delete
 ```
+
+## Git stuff
+
+```bash
+git clone https://github.com/nt409/polygenic2
+```

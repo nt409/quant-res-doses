@@ -12,7 +12,7 @@ def combine():
     combined = pd.concat([
         pd.read_csv(f'../outputs/fig2_{ii}_{N_K}_{N_L}.csv')
         for ii in range(N_ITS)
-    ], axis=0)
+    ])
 
     print(combined.shape)
 

@@ -13,6 +13,7 @@
       "**/joblib_cache/": true,
       "**/logs/": true,
       "**/figures/": true
+      // "**/outputs/": true
     }
   }
 }

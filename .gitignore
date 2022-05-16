@@ -1,6 +1,7 @@
 data/*
-
 figures/*
+outputs/*
+
 
 *.egg-info/
 __pycache__/

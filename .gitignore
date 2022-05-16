@@ -1,5 +1,7 @@
 data/*
 
+figures/*
+
 *.egg-info/
 __pycache__/
 
@@ -9,6 +11,8 @@ dist/
 # want nbs shared across devices
 # notebooks/*
 # *.ipynb
+
+*.DS_Store
 
 *.log
 

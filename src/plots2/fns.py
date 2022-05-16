@@ -1,4 +1,5 @@
 import copy
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -19,7 +20,7 @@ from plots2.consts import (
 
 def standard_layout(legend_on, width=PLOT_WIDTH, height=PLOT_HEIGHT):
     return go.Layout(
-        font=dict(size=16),
+        font=dict(size=14),
         template="simple_white",
         width=width,
         height=height,
@@ -567,3 +568,56 @@ def traces_with_uncertainty_bands(
 def hex_to_rgb(string):
     args = ImageColor.getcolor(string, 'RGB')
     return f'rgba({args[0]},{args[1]},{args[2]},1)'
+
+
+def corner_annotations_rowwise(
+    row_n, col_n, top, left, row_gap, col_gap
+):
+
+    corners = []
+
+    col_vec = get_cols(left, col_gap, col_n)
+    row_vec = get_rows(top, row_gap, row_n)
+
+    letters = 'ABCDEFGHIJKLMN'
+
+    ii = 0
+
+    for col, row in itertools.product(row_vec, col_vec):
+        letter = letters[ii]
+        corner = get_text_annotation(row, col, letter, size=20)
+        corners.append(corner)
+        ii += 1
+
+    return corners
+
+
+def corner_annotations_colwise(
+    row_n, col_n, top, left, row_gap, col_gap
+):
+    corners = []
+
+    col_vec = get_cols(left, col_gap, col_n)
+    row_vec = get_rows(top, row_gap, row_n)
+
+    letters = 'ABCDEFGHIJKLMN'
+
+    ii = 0
+
+    for row, col in itertools.product(col_vec, row_vec):
+        letter = letters[ii]
+        corner = get_text_annotation(row, col, letter, size=20)
+        corners.append(corner)
+        ii += 1
+
+    return corners
+
+
+def get_rows(top, row_gap, row_n):
+    rows = [top - i*row_gap for i in range(row_n)]
+    return rows
+
+
+def get_cols(left, col_gap, col_n):
+    cols = [left + i*col_gap for i in range(col_n)]
+    return cols

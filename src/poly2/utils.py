@@ -204,21 +204,19 @@ def economic_yield_function(yield_vec, sprays_vec, doses):
     return profit
 
 
-# def keys_from_config(config_in):
+def keys_from_config(config_in):
 
-#     sprays = list(map(str, config_in.sprays))
-#     host = ['Y' if hh else 'N' for hh in config_in.host_on]
+    sprays = list(map(str, config_in.sprays))
+    host = ['Y' if hh else 'N' for hh in config_in.host_on]
 
-#     keys = []
+    keys = []
 
-#     for spray, host in itertools.product(sprays, host):
+    for spray, host in itertools.product(sprays, host):
 
-#         spray_str = 'N' if spray == '0' else f'Y{spray}'
-#         keys.append(f'spray_{spray_str}_host_{host}')
+        spray_str = 'N' if spray == '0' else f'Y{spray}'
+        keys.append(f'spray_{spray_str}_host_{host}')
 
-#     return keys
-#
-#
+    return keys
 
 #
 #

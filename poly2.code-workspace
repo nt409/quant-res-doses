@@ -11,7 +11,8 @@
       "**/pyproject.toml": true,
       "**/setup.cfg": true,
       "**/joblib_cache/": true,
-      "**/logs/": true
+      "**/logs/": true,
+      "**/figures/": true
     }
   }
 }

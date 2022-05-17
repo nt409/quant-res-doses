@@ -16,18 +16,18 @@ def combine():
 
     print(combined.shape)
 
-    grouped = (
-        combined
-        .groupby(['sprays', 'dose', 'year'])
-        .median()
-        .reset_index()
-    )
+    # grouped = (
+    #     combined
+    #     .groupby(['sprays', 'dose', 'year'])
+    #     .median()
+    #     .reset_index()
+    # )
 
-    print(grouped.shape)
+    # print(grouped.shape)
 
     fn = '../outputs/combined/fig4.csv'
     print(f'saving to {fn}')
-    grouped.to_csv(fn, index=False)
+    combined.to_csv(fn, index=False)
 
     return None
 

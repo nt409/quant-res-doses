@@ -24,13 +24,13 @@ def main(
         n_l=300,
     )
 
-    host_means = np.linspace(0.05, 1, 20)
+    fung_means = np.linspace(0.05, 1, 20)
     doses = np.linspace(0.1, 1, 10)
 
-    host_ind = floor(run/len(doses))
+    fung_ind = floor(run/len(doses))
     dose_ind = run % len(doses)
 
-    cmh.l_mu = host_means[host_ind]
+    cmh.k_mu = fung_means[fung_ind]
     dose = doses[dose_ind]
 
     data_out = no_joblib_simulations_run(
@@ -45,9 +45,9 @@ def main(
     out = (
         pd.concat(
             [
-                get_dataframe(output1, 1, dose, host_means[host_ind]),
-                get_dataframe(output2, 2, dose, host_means[host_ind]),
-                get_dataframe(output3, 3, dose, host_means[host_ind])
+                get_dataframe(output1, 1, dose, fung_means[fung_ind]),
+                get_dataframe(output2, 2, dose, fung_means[fung_ind]),
+                get_dataframe(output3, 3, dose, fung_means[fung_ind])
             ],
             ignore_index=True
         )
@@ -56,12 +56,12 @@ def main(
 
     conf_str = f'{run}_{cmh.n_k}_{cmh.n_l}'
 
-    out.to_csv(f'../outputs/fig3_{conf_str}.csv')
+    out.to_csv(f'../outputs/fig4_{conf_str}.csv')
 
     return None
 
 
-def get_dataframe(output, sprays, dose, host_mean):
+def get_dataframe(output, sprays, dose, fung_mean):
     """Get dataframe summarising output
 
     Parameters
@@ -72,14 +72,14 @@ def get_dataframe(output, sprays, dose, host_mean):
         --
     dose : float
         --
-    host_mean : float
+    fung_mean : float
         --
 
     Returns
     -------
     out : pd.DataFrame
         Columns:
-        - host_mu
+        - fung_mu
         - sprays
         - dose
         - year
@@ -91,7 +91,7 @@ def get_dataframe(output, sprays, dose, host_mean):
 
     out = pd.DataFrame(
         {
-            'host_mu': host_mean,
+            'fung_mu': fung_mean,
             'sprays': int(sprays),
             'dose': dose,
             'year': np.arange(1, 1+len(output['yield_vec'])),

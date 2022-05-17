@@ -117,4 +117,4 @@ if __name__ == '__main__':
 
     run_index = int(sys.argv[1])
 
-    main(run_index, n_its=5, n_years=15)
+    main(run_index, n_its=10, n_years=15)

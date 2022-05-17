@@ -61,7 +61,7 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
-conda activate poly_env2
+conda activate poly2_env
 
 #! Command line that we want to run:
 #! The variable $SLURM_ARRAY_TASK_ID contains the array index for each job.

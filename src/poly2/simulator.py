@@ -621,7 +621,7 @@ class SimulatorBothTraits:
 
         self._get_y0(I0_in, D0_l, D0_k)
 
-        soln_tmp, t_out = self._solve_it(beta_in, num_sprays)
+        soln_tmp, t_out = self._solve_it(beta_in, num_sprays, dose)
 
         soln, fung_dist_out, host_dist_out = self._dists_fung_and_host(
             soln_tmp)

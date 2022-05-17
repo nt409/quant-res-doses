@@ -39,16 +39,6 @@ on cluster)
 conda env create -f environment.yml
 ```
 
-<!-- TODO -->
-<!-- conda install -c conda-forge pickle -->
-
-<!-- conda install -c anaconda pillow -->
-
-<!-- conda install -c conda-forge pygam -->
-<!-- conda install -c plotly plotly -->
-
-<!--  -->
-
 See `https://shandou.medium.com/export-and-create-conda-environment-with-yml-5de619fe5a2`.
 
 To see list of conda envs:

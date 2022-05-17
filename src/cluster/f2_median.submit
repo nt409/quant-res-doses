@@ -67,4 +67,4 @@ conda activate poly2_env
 #! The variable $SLURM_ARRAY_TASK_ID contains the array index for each job.
 #! In this example, each job will be passed its index
 
-python -m  cluster.f2_median $SLURM_ARRAY_TASK_ID
+python -m cluster.f2_median $SLURM_ARRAY_TASK_ID

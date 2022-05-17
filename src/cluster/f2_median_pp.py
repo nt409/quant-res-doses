@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-N_ITS = 20
+N_ITS = 200
 N_K = 500
 N_L = 50
 

@@ -174,7 +174,12 @@ def host_growth_function(t, S, y):
 
     out = growth - senescence*S
 
+    # return 0
+
     return out
+
+
+# print('Host Growth Off!!!')
 
 
 def yield_function(sev):

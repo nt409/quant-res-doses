@@ -259,7 +259,7 @@ class SimulatorOneTrait:
 
         dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states)
 
-        # # !!! below change makes density independent
+        # # !!! below change makes density independent (S=1)
 
         # dydt[:-1] = beta * disease_states
 

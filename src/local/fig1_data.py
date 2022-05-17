@@ -7,7 +7,30 @@ from poly2.run import no_joblib_simulations_run
 from poly2.utils import get_dist_mean, get_dist_var
 
 
-def main(n_years=15):
+def main(doses, n_years=15):
+    """Produce df, saved to outputs/fig1/{nk}_{nl}.csv
+
+    For different sprays and doses (defined below), get dataframe with 
+    severity, mean, var
+
+    Parameters
+    ----------
+    doses : list, np.array
+        list of doses to run model for
+    n_years : int, optional
+        N years to run model, by default 15
+
+    Returns
+    -------
+    out : pd.DataFrame
+        df with columns:
+        - sprays
+        - dose
+        - year
+        - sev
+        - fung_mean
+        - fung_var
+    """
 
     cmh = Config(
         type='single',
@@ -18,19 +41,14 @@ def main(n_years=15):
         n_l=50,
     )
 
-    # cmh.mutation_proportion = 2e-1
-
     # print('Mutation is off!!!')
 
+    # cmh.mutation_proportion = 2e-1
     # cmh.mutation_proportion = 0
     # cmh.mutation_scale_host = 1e-5
     # cmh.mutation_scale_fung = 1e-5
 
     out = pd.DataFrame()
-
-    doses = np.linspace(0.1, 1, 10)
-    # doses = [0.5, 1]
-    # doses = [1]
 
     for dose in tqdm(doses):
 
@@ -56,7 +74,7 @@ def main(n_years=15):
     out = out.reset_index(drop=True)
 
     conf_str = f'{cmh.n_k}_{cmh.n_l}'
-    fn = f'../outputs/combined/fig1_{conf_str}.csv'
+    fn = f'../outputs/combined/fig1/{conf_str}.csv'
 
     print(f'Saving to {fn}')
     out.to_csv(fn, index=False)
@@ -71,8 +89,6 @@ def get_dataframe_fig1(output, sprays, dose):
     ----------
     output : list of dicts
         --
-    run : int
-        --
     sprays : int
         --
     dose : float
@@ -82,13 +98,12 @@ def get_dataframe_fig1(output, sprays, dose):
     -------
     out : pd.DataFrame
         Columns:
-        - run
         - sprays
         - dose
         - year
         - sev
-        - yld
-        - econ
+        - fung_mean
+        - fung_var
 
     """
 
@@ -110,4 +125,9 @@ def get_dataframe_fig1(output, sprays, dose):
 
 
 if __name__ == '__main__':
-    main()
+
+    # doses = np.linspace(0.1, 1, 10)
+    # doses = [0.5, 1]
+    doses = [1]
+
+    main(doses)

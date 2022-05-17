@@ -21,7 +21,6 @@ def combine():
         .groupby(['sprays', 'dose', 'year'])
         .median()
         .reset_index()
-        .drop('run', axis=1)
     )
 
     print(grouped.shape)

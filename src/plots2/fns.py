@@ -621,3 +621,46 @@ def get_rows(top, row_gap, row_n):
 def get_cols(left, col_gap, col_n):
     cols = [left + i*col_gap for i in range(col_n)]
     return cols
+
+
+def my_colorbar_subplot(title, x, y, length):
+    """_summary_
+
+    Parameters
+    ----------
+    title : _type_
+        _description_
+    x : _type_
+        _description_
+    y : _type_
+        _description_
+    length : _type_
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+
+    Examples
+    --------
+    >>>heatmap = go.Heatmap(
+    ...     x=x_heat,
+    ...     y=y_heat,
+    ...     z=z_heat,
+    ...     colorscale=grey_colorscale_discrete(z_heat), # or something
+    ...     colorbar=my_colorbar_subplot(
+    ...         "title", xpos, ypos, length)
+    ... )
+    """
+    return dict(
+        # title=title,
+        x=x,
+        y=y,
+        len=length,
+        thickness=25,
+        tickfont=dict(size=12),
+        title=dict(text=title,
+                   font=dict(size=14)),
+        # titleside = 'right',
+    )

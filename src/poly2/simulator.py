@@ -29,7 +29,6 @@ class SimulatorOneTrait:
         fungicide_on=True,
         host_plant_on=False,
         number_of_sprays=0,
-        custom_sprays_vec=None,
     ):
         """Init method
 
@@ -50,16 +49,12 @@ class SimulatorOneTrait:
 
         number_of_sprays : int, optional
             N sprays per year, overridden by custom sprays vec, by default 0
-
-        custom_sprays_vec : list/np.array, optional
-            Overrides number of sprays, by default None
         """
 
         self.host_plant_on = host_plant_on
         self.fungicide_on = fungicide_on
 
         self.number_of_sprays = number_of_sprays
-        self.custom_sprays_vec = custom_sprays_vec
 
         self.conf_o = config
         self.mutation_array = None
@@ -117,10 +112,7 @@ class SimulatorOneTrait:
 
         dis_sev = np.zeros(self.n_years)
 
-        if self.custom_sprays_vec is not None:
-            sprays_vec_use = self.custom_sprays_vec
-        else:
-            sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
+        sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
 
         self._get_mutation_kernels()
         #
@@ -145,8 +137,8 @@ class SimulatorOneTrait:
         total_I[:, 0] = total_infection
         dis_sev[0] = total_I[-1, 0]
 
-        S_end = sol_list[-1, -1, 0]
-        dis_sev[0] = dis_sev[0] / (dis_sev[0] + S_end)
+        final_S = sol_list[-1, -1, 0]
+        dis_sev[0] = dis_sev[0] / (dis_sev[0] + final_S)
 
         if replace_cultivar_array is not None and replace_cultivar_array[0]:
             host_dists[:, 1] = self.initial_l_dist
@@ -167,11 +159,11 @@ class SimulatorOneTrait:
                 self.conf_o.doses[yr],
             )
 
-            dis_sev[yr] = total_I[-1, yr]
+            final_I = total_I[-1, yr]
 
             # scale so proportion of final leaf size
-            S_end = sol_list[-1, -1, yr]
-            dis_sev[yr] = dis_sev[yr] / (dis_sev[yr] + S_end)
+            final_S = sol_list[-1, -1, yr]
+            dis_sev[yr] = final_I / (final_I + final_S)
 
             if (replace_cultivar_array is not None
                     and replace_cultivar_array[yr]):
@@ -392,7 +384,6 @@ class SimulatorBothTraits:
         self,
         config,
         number_of_sprays=0,
-        custom_sprays_vec=None,
     ):
         """Init method
 
@@ -403,13 +394,9 @@ class SimulatorBothTraits:
 
         number_of_sprays : int, optional
             N sprays per year, overridden by custom sprays vec, by default 0
-
-        custom_sprays_vec : list/np.array, optional
-            Overrides number of sprays, by default None
         """
 
         self.number_of_sprays = number_of_sprays
-        self.custom_sprays_vec = custom_sprays_vec
 
         self.conf_b = config
 
@@ -469,10 +456,7 @@ class SimulatorBothTraits:
 
         dis_sev = np.zeros(self.n_years)
 
-        if self.custom_sprays_vec is not None:
-            sprays_vec_use = self.custom_sprays_vec
-        else:
-            sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
+        sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
 
         self._get_kernels()
         #
@@ -495,10 +479,10 @@ class SimulatorBothTraits:
         # set the first year
         sol_list[:, :, 0] = sol
         total_I[:, 0] = total_infection
-        dis_sev[0] = total_I[-1, 0]
+        final_I = total_I[-1, 0]
 
-        S_end = sol_list[-1, -1, 0]
-        dis_sev[0] = dis_sev[0] / (dis_sev[0] + S_end)
+        final_S = sol_list[-1, -1, 0]
+        dis_sev[0] = final_I / (final_I + final_S)
 
         if replace_cultivar_array is not None and replace_cultivar_array[0]:
             host_dists[:, 1] = self.initial_l_dist
@@ -519,11 +503,11 @@ class SimulatorBothTraits:
                 self.conf_b.doses[yr],
             )
 
-            dis_sev[yr] = total_I[-1, yr]
+            final_I = total_I[-1, yr]
 
             # scale so proportion of final leaf size
-            S_end = sol_list[-1, -1, yr]
-            dis_sev[yr] = dis_sev[yr] / (dis_sev[yr] + S_end)
+            final_S = sol_list[-1, -1, yr]
+            dis_sev[yr] = final_I / (final_I + final_S)
 
             if (replace_cultivar_array is not None
                     and replace_cultivar_array[yr]):
@@ -753,7 +737,6 @@ class SimulatorMixture:
         self,
         config,
         number_of_sprays=0,
-        custom_sprays_vec=None,
     ):
         """Init method
 
@@ -764,13 +747,9 @@ class SimulatorMixture:
 
         number_of_sprays : int, optional
             N sprays per year, overridden by custom sprays vec, by default 0
-
-        custom_sprays_vec : list/np.array, optional
-            Overrides number of sprays, by default None
         """
 
         self.number_of_sprays = number_of_sprays
-        self.custom_sprays_vec = custom_sprays_vec
 
         self.conf_m = config
 
@@ -829,10 +808,7 @@ class SimulatorMixture:
 
         dis_sev = np.zeros(self.n_years)
 
-        if self.custom_sprays_vec is not None:
-            sprays_vec_use = self.custom_sprays_vec
-        else:
-            sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
+        sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
 
         self._get_kernels()
         #
@@ -856,10 +832,10 @@ class SimulatorMixture:
         # set the first year
         sol_list[:, :, 0] = sol
         total_I[:, 0] = total_infection
-        dis_sev[0] = total_I[-1, 0]
+        final_I = total_I[-1, 0]
 
-        S_end = sol_list[-1, -1, 0]
-        dis_sev[0] = dis_sev[0] / (dis_sev[0] + S_end)
+        final_S = sol_list[-1, -1, 0]
+        dis_sev[0] = final_I / (final_I + final_S)
 
         #
         # calculate the rest of the years
@@ -878,11 +854,11 @@ class SimulatorMixture:
                 self.conf_m.doses_B[yr],
             )
 
-            dis_sev[yr] = total_I[-1, yr]
+            final_I = total_I[-1, yr]
 
             # scale so proportion of final leaf size
-            S_end = sol_list[-1, -1, yr]
-            dis_sev[yr] = dis_sev[yr] / (dis_sev[yr] + S_end)
+            final_S = sol_list[-1, -1, yr]
+            dis_sev[yr] = final_I / (final_I + final_S)
 
         # calculate yield and economic yield
         yield_vec = [yield_function(sev) for sev in dis_sev]

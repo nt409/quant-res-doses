@@ -1,7 +1,5 @@
 import numpy as np
-from scipy import signal
 from scipy.integrate import ode
-from scipy.stats import norm
 
 from poly2.params import PARAMS
 from poly2.utils import (
@@ -15,7 +13,8 @@ from poly2.utils import (
     initial_host_dist,
     initial_fung_dist,
     normalise,
-    yield_function
+    yield_function,
+    get_dispersal_kernel,
 )
 
 
@@ -291,7 +290,7 @@ class SimulatorOneTrait:
 
         if self.fungicide_on and not self.host_plant_on:
             # FUNG
-            self.mutation_array = self._get_kernel(
+            self.mutation_array = get_dispersal_kernel(
                 self.k_vec,
                 self.config_o.mutation_proportion,
                 self.config_o.mutation_scale_fung,
@@ -299,52 +298,11 @@ class SimulatorOneTrait:
 
         elif not self.fungicide_on and self.host_plant_on:
             # HOST
-            self.mutation_array = self._get_kernel(
+            self.mutation_array = get_dispersal_kernel(
                 self.l_vec,
                 self.config_o.mutation_proportion,
                 self.config_o.mutation_scale_host,
             )
-
-    def _get_kernel(self, vec, p, mutation_scale):
-        # NB changed to transpose of prev version
-        # Needed to now that have dispersal boundary conditions
-        # This means kernel is not quite symmetric, but ensures that disease
-        # stays constant when sprays = 0, which it wasn't before because not
-        # all rows (/columns would need to check) sum to 1.
-
-        N = len(vec)
-
-        kernel = np.zeros((N, N))
-
-        for parent in range(N):
-            # some proportion stays at position i
-            not_dispersing = signal.unit_impulse(N, parent)
-
-            dispersing = self.dispersal(vec, parent, mutation_scale)
-
-            kernel[:, parent] = p*dispersing + (1-p)*not_dispersing
-
-        return kernel
-
-    def dispersal(self, vec, parent_index, mut_scale):
-
-        stan_dev = mut_scale**0.5
-
-        edges = edge_values(len(vec))
-
-        disp = norm.cdf(edges, loc=vec[parent_index], scale=stan_dev)
-
-        dispersing = np.diff(disp)
-
-        top = 1 - disp[-1]
-
-        bottom = disp[0]
-
-        dispersing[0] += bottom
-
-        dispersing[-1] += top
-
-        return dispersing
 
     def _solve_it(self, beta_in, num_sprays, dose):
 
@@ -714,53 +672,17 @@ class SimulatorBothTraits:
 
     def _get_kernels(self):
 
-        self.fung_kernel = self._get_kernel(
+        self.fung_kernel = get_dispersal_kernel(
             self.k_vec,
             self.config_b.mutation_proportion,
             self.config_b.mutation_scale_fung,
         )
 
-        self.host_kernel = self._get_kernel(
+        self.host_kernel = get_dispersal_kernel(
             self.l_vec,
             self.config_b.mutation_proportion,
             self.config_b.mutation_scale_host,
         )
-
-    def _get_kernel(self, vec, p, mutation_scale):
-
-        N = len(vec)
-
-        kernel = np.zeros((N, N))
-
-        for parent in range(N):
-            # some proportion stays at position i
-            not_dispersing = signal.unit_impulse(N, parent)
-
-            dispersing = self._dispersal(vec, parent, mutation_scale)
-
-            kernel[:, parent] = p*dispersing + (1-p)*not_dispersing
-
-        return kernel
-
-    def _dispersal(self, vec, parent_index, mut_scale):
-
-        stan_dev = mut_scale**0.5
-
-        edges = edge_values(len(vec))
-
-        disp = norm.cdf(edges, loc=vec[parent_index], scale=stan_dev)
-
-        dispersing = np.diff(disp)
-
-        top = 1 - disp[-1]
-
-        bottom = disp[0]
-
-        dispersing[0] += bottom
-
-        dispersing[-1] += top
-
-        return dispersing
 
     def _solve_it(self, beta_in, num_sprays, dose):
 

@@ -13,7 +13,7 @@ from math import exp, log, log10
 
 import numpy as np
 
-from scipy.stats import beta, gamma
+from scipy.stats import beta, gamma, norm
 from scipy.optimize import minimize
 from scipy.integrate import ode
 from scipy import signal
@@ -480,3 +480,41 @@ def get_fung_dist_params_from_config(config):
     a_out = mu_val*b_val
 
     return a_out, b_val
+
+
+def get_dispersal_kernel(vec, p, mutation_scale):
+
+    N = len(vec)
+
+    kernel = np.zeros((N, N))
+
+    for parent in range(N):
+        # some proportion stays at position i
+        not_dispersing = signal.unit_impulse(N, parent)
+
+        dispersing = dispersal(vec, parent, mutation_scale)
+
+        kernel[:, parent] = p*dispersing + (1-p)*not_dispersing
+
+    return kernel
+
+
+def dispersal(vec, parent_index, mut_scale):
+
+    stan_dev = mut_scale**0.5
+
+    edges = edge_values(len(vec))
+
+    disp = norm.cdf(edges, loc=vec[parent_index], scale=stan_dev)
+
+    dispersing = np.diff(disp)
+
+    top = 1 - disp[-1]
+
+    bottom = disp[0]
+
+    dispersing[0] += bottom
+
+    dispersing[-1] += top
+
+    return dispersing

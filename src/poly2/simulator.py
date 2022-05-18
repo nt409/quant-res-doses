@@ -774,7 +774,11 @@ class SimulatorMixture:
 
         self.conf_m = config
 
-        self.k_a, self.k_b = get_fung_dist_params_from_config(self.conf_m)
+        self.A_a = self.conf_m.A_mu * self.conf_m.A_b
+        self.A_b = self.conf_m.A_b
+
+        self.B_a = self.conf_m.B_mu * self.conf_m.B_b
+        self.B_b = self.conf_m.B_b
 
         self.n_k = self.conf_m.n_k
 
@@ -785,8 +789,8 @@ class SimulatorMixture:
         self.fung_A_kernel = None
         self.fung_B_kernel = None
 
-        self.initial_fA_dist = initial_fung_dist(self.n_k, self.k_a, self.k_b)
-        self.initial_fB_dist = initial_fung_dist(self.n_k, self.k_a, self.k_b)
+        self.initial_fA_dist = initial_fung_dist(self.n_k, self.A_a, self.A_b)
+        self.initial_fB_dist = initial_fung_dist(self.n_k, self.B_a, self.B_b)
 
         #
         #

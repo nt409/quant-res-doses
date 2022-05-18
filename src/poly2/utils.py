@@ -532,3 +532,13 @@ def dispersal(vec, parent_index, mut_scale):
     dispersing[-1] += top
 
     return dispersing
+
+
+def get_model_times():
+    times = np.linspace(PARAMS.T_1, PARAMS.T_end, 100)
+    times = list(times)
+
+    times += [PARAMS.T_2, PARAMS.T_3]
+    times = sorted(times)
+    times = np.asarray(times)
+    return times

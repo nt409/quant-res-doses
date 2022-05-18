@@ -11,7 +11,7 @@ from joblib import Memory
 from tqdm import tqdm
 
 from poly2.params import PARAMS
-from poly2.simulator import SimulatorBothTraits, SimulatorOneTrait
+from poly2.simulator import SimulatorBothTraits, SimulatorMixture, SimulatorOneTrait
 from poly2.utils import keys_from_config
 
 
@@ -24,9 +24,6 @@ memory = Memory('../joblib_cache/', verbose=1)
 
 @memory.cache
 def simulations_run(config,
-                    I0s=None,
-                    betas=None,
-                    doses=None,
                     verbose=True):
     """Run polygenic model
 
@@ -34,15 +31,6 @@ def simulations_run(config,
     ----------
     config : Config (see config classes)
         _description_
-
-    I0s : list/np.array, optional
-        I0 values, overrides config.I0_single/config.I0_multi, by default None
-
-    betas : list/np.array, optional
-        Beta values, overrides config.beta_single, by default None
-
-    doses : list/np.array, optional
-        Doses, one per year, by default None
 
     verbose : bool, optional
         Whether to print 'running simulation' or not - fine in general but
@@ -64,15 +52,11 @@ def simulations_run(config,
     ... )
     >>>data = simulations_run(config_single)
     """
-    return no_joblib_simulations_run(config,
-                                     I0s,
-                                     betas,
-                                     doses,
-                                     verbose)
+    return no_joblib_simulations_run(config, verbose)
 
 
 @memory.cache
-def multiple_run(config, doses=None):
+def multiple_run(config):
     """Multiple runs
 
     Uses varying beta.
@@ -81,8 +65,6 @@ def multiple_run(config, doses=None):
     ----------
     config : Config
         see Config docs
-    doses : list/np.array, optional
-        Doses, one per year, by default None
 
     Returns
     -------
@@ -101,7 +83,7 @@ def multiple_run(config, doses=None):
     ... )
     >>>data = multiple_run(config)
     """
-    return no_joblib_multiple_run(config, doses)
+    return no_joblib_multiple_run(config)
 
 #
 #
@@ -110,9 +92,6 @@ def multiple_run(config, doses=None):
 
 def no_joblib_simulations_run(
     config,
-    I0s=None,
-    betas=None,
-    doses=None,
     verbose=True,
 ):
     """See docs above for joblib version"""
@@ -120,57 +99,51 @@ def no_joblib_simulations_run(
     if verbose:
         print('running simulation')
 
-    if betas is None:
-        betas = config.beta_single * np.ones(config.n_years)
+    conf_use = copy.deepcopy(config)
 
-    if I0s is None:
-        I0s = config.I0_single * np.ones(config.n_years)
-
-    if doses is None:
-        doses = np.ones(len(betas))
-
-    config_save = copy.deepcopy(config)
-
-    model_output = {}
-    for key in PARAMS.strategy_mapping.keys():
-        model_output[key] = []
+    model_output = {key: [] for key in PARAMS.strategy_mapping.keys()}
 
     for spray, host in itertools.product(
         config.sprays,
         config.host_on
     ):
 
-        config_save.sprays = [spray]
-        config_save.host_on = [host]
+        conf_use.sprays = [spray]
+        conf_use.host_on = [host]
 
-        fungicide_on = False if (host and spray == 0) else True
+        if conf_use.fungicide_mixture:
 
-        if host and fungicide_on:
-            this_simulation = SimulatorBothTraits(
-                config=config_save,
+            this_simulation = SimulatorMixture(
+                config=conf_use,
                 number_of_sprays=spray,
             )
 
         else:
-            this_simulation = SimulatorOneTrait(
-                config=config_save,
-                fungicide_on=fungicide_on,
-                host_plant_on=host,
-                number_of_sprays=spray,
-            )
 
-        key = keys_from_config(config_save)[0]
+            fungicide_on = False if (host and spray == 0) else True
 
-        model_output[key] = this_simulation.run_model(
-            I0s=I0s,
-            betas=betas,
-            doses=doses,
-        )
+            if host and fungicide_on:
+                this_simulation = SimulatorBothTraits(
+                    config=conf_use,
+                    number_of_sprays=spray,
+                )
+
+            else:
+                this_simulation = SimulatorOneTrait(
+                    config=conf_use,
+                    fungicide_on=fungicide_on,
+                    host_plant_on=host,
+                    number_of_sprays=spray,
+                )
+
+        key = keys_from_config(conf_use)[0]
+
+        model_output[key] = this_simulation.run_model()
 
     return model_output
 
 
-def no_joblib_multiple_run(config, doses=None):
+def no_joblib_multiple_run(config):
     """See docs for joblib version above"""
 
     print('running multiple runs')
@@ -184,26 +157,21 @@ def no_joblib_multiple_run(config, doses=None):
         config.beta_multi[:n_total], (config.n_iterations, config.n_years)
     )
 
+    conf_use = copy.deepcopy(config)
     #
     #
 
-    dict_of_lists = {}
-    for key in PARAMS.strategy_mapping.keys():
-        dict_of_lists[key] = []
+    dict_of_lists = {key: [] for key in PARAMS.strategy_mapping.keys()}
 
     #
     #
 
     for ii in tqdm(range(config.n_iterations)):
 
-        betas = np.asarray(betas_sample_from[ii, :])
-        I0s = config.I0_single * np.ones(len(betas))
+        conf_use.betas = np.asarray(betas_sample_from[ii, :])
 
         model_output_dict = no_joblib_simulations_run(
-            config,
-            I0s,
-            betas,
-            doses,
+            conf_use,
             verbose=False
         )
 

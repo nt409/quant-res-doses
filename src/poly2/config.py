@@ -18,7 +18,7 @@ class Config:
     def __init__(
         self,
         #
-        type: str,
+        type=None,
         #
         sprays=None,
         host_on=None,
@@ -36,6 +36,11 @@ class Config:
         mutation_scale_fung=DEFAULT_MUTATION_SCALE,
         #
         decay_rate=None,
+        decay_rate_B=None,
+        #
+        fungicide_mixture=False,
+        dose=None,
+        dose_B=None,
         #
         verbose=True,
     ):
@@ -44,8 +49,6 @@ class Config:
         There are various ways we want to run the model:
         - single run
         - multiple run (varying disease pressure)
-        - variable run (varying fungicide strategy)
-        - mutual protection run
 
         Then specify tactics for single/multi runs via sprays and host on
 
@@ -53,11 +56,11 @@ class Config:
 
         Parameters
         ----------
-        type : str
+        type : str, optional
             Can be:
             - 'single'
             - 'multi'
-            - 'variable'
+            by default None which gives 'single'
 
         sprays : list of ints, optional
             will be passed into itertools.product with host_on
@@ -107,13 +110,28 @@ class Config:
         decay_rate : float, optional
             Fungicide decay rate if want =/= default, by default None
 
+        decay_rate_B : float, optional
+            Fungicide decay rate if want =/= default, and using fungicide
+            mixture, by default None
+
+        fungicide_mixture : bool, optional
+            Whether using fung mixture (host off), by default False
+
+        dose : float, optional
+            use dose * np.ones(n_years), by default None
+            If None, use np.ones(n_years)
+
+        dose_B : float, optional
+            Fungicide B; 
+            use dose_B * np.ones(n_years), by default None
+            If None, use np.ones(n_years)
+
         verbose : bool, optional
             whether to print out summary of config, by default True
 
         Examples
         --------
         >>>single = Config(
-        ... type='single',
         ... sprays=[2],
         ... host_on=[False],
         ... n_k=100,
@@ -127,11 +145,6 @@ class Config:
         ... )
         """
 
-        self.n_k = n_k
-        self.n_l = n_l
-
-        self.n_iterations = n_iterations
-
         self.n_years = n_years
 
         #
@@ -139,14 +152,41 @@ class Config:
         # STRATEGY
         self.sprays = sprays
 
-        self.host_on = host_on
+        self.fungicide_mixture = fungicide_mixture
 
-        if replace_cultivars is not False:
-            self.replace_cultivars = replace_cultivars
+        self.n_k = n_k
+        self.n_l = n_l
+
+        if fungicide_mixture:
+            self.decay_rate_A = decay_rate
+            self.decay_rate_B = decay_rate_B
+
+            if dose is None:
+                self.doses_A = np.ones(self.n_years)
+            else:
+                self.doses_A = dose * np.ones(self.n_years)
+
+            if dose_B is None:
+                self.doses_B = np.ones(self.n_years)
+            else:
+                self.doses_B = dose_B * np.ones(self.n_years)
+
+            self.host_on = [False]
+
         else:
-            self.replace_cultivars = None
+            self.decay_rate = decay_rate
 
-        self.decay_rate = decay_rate
+            if dose is None:
+                self.doses = np.ones(self.n_years)
+            else:
+                self.doses = dose * np.ones(self.n_years)
+
+            self.host_on = host_on
+
+            if replace_cultivars is not False:
+                self.replace_cultivars = replace_cultivars
+            else:
+                self.replace_cultivars = None
 
         #
         #
@@ -169,22 +209,28 @@ class Config:
         self.k_mu = float(fit.loc[lambda df: df.trait == 'Fungicide', 'mu'])
         self.k_b = float(fit.loc[lambda df: df.trait == 'Fungicide', 'b'])
 
-        self.l_mu = float(fit.loc[lambda df: df.trait == 'Mariboss', 'mu'])
-        self.l_b = float(fit.loc[lambda df: df.trait == 'Mariboss', 'b'])
+        if not fungicide_mixture:
+            self.l_mu = float(fit.loc[lambda df: df.trait == 'Mariboss', 'mu'])
+            self.l_b = float(fit.loc[lambda df: df.trait == 'Mariboss', 'b'])
 
         #
         #
         # SCENARIO
 
-        self.type = type
+        if type is None:
+            self.type = 'single'
+        else:
+            self.type = type
 
-        self.I0_single = DEFAULT_I0
+        # self.I0_single = DEFAULT_I0
+        self.I0s = DEFAULT_I0 * np.ones(self.n_years)
 
-        if type in ['single', 'variable']:
-            self.beta_single = DEFAULT_BETA
+        if self.type == 'single':
+            self.betas = DEFAULT_BETA * np.ones(self.n_years)
 
-        elif type == 'multi':
+        elif self.type == 'multi':
             self.beta_multi = ALL_BETAS
+            self.n_iterations = n_iterations
 
         if verbose:
             self.print_string_repr()
@@ -200,24 +246,23 @@ class Config:
         str_out = "CONFIG\n------\n"
 
         for key, item in sorted(vars(self).items()):
-            if len(str(item)) > 50:
-                item_str = f"{str(item)[:50]}..."
-            else:
-                item_str = f"{str(item)}"
 
-            str_out += f"{str(key)}={item_str}\n"
+            this_key = (
+                f"{str(key)}={str(item)}"
+                .replace('{', '')
+                .replace('}', '')
+                # .replace('[', '')
+                # .replace(']', '')
+                .replace("'", '')
+                .replace(' ', ', ')
+                .replace(':', '--')
+                .replace('=', ' = ')
+                .replace(',,', ',')
+            )
 
-        str_out = (
-            str_out
-            .replace('{', '')
-            .replace('}', '')
-            .replace('[', '')
-            .replace(']', '')
-            .replace("'", '')
-            .replace(' ', ', ')
-            .replace(':', '--')
-            .replace('=', ' = ')
-            .replace(',,', ',')
-        )
+            if len(this_key) >= 54:
+                this_key = this_key[:50] + " ..."
+
+            str_out += this_key + "\n"
 
         print(str_out)

@@ -1,6 +1,6 @@
 """For Figure 4"""
 
-from math import floor
+from math import floor, log
 import sys
 
 import numpy as np
@@ -24,14 +24,16 @@ def main(
         n_l=300,
     )
 
-    # don't want means to go to 1 (causes problems)
-    fung_means = np.linspace(0.05, 1, 20)[:-1]
+    # don't want means to go to 1
+    fung_means = np.linspace(0.01, 0.99, 20)
     doses = np.linspace(0.1, 1, 10)
 
     fung_ind = floor(run/len(doses))
     dose_ind = run % len(doses)
 
-    cmh.k_mu = fung_means[fung_ind]
+    fung_mean = fung_means[fung_ind]
+    cmh.k_mu = log(1/fung_mean)
+
     dose = doses[dose_ind]
 
     data_out = no_joblib_simulations_run(

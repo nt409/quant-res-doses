@@ -1,7 +1,5 @@
 """
-Functions to run model - wrapped in run.py
-
-Convenient wrapper for running model, can instead directly run
+Convenient wrappers for running model, can instead directly run
 SimulatorOneTrait or SimulatorBothTraits
 """
 

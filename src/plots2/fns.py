@@ -78,7 +78,8 @@ def get_arrow_annotation(
         color=None,
         refs=None,
         xanchor=None,
-        yanchor=None):
+        yanchor=None
+):
 
     color = GREY_LABEL if color is None else color
 
@@ -623,23 +624,25 @@ def get_cols(left, col_gap, col_n):
     return cols
 
 
-def my_colorbar_subplot(title, x, y, length):
+def my_colorbar_subplot(title, x, y, length, titleside=None):
     """_summary_
 
     Parameters
     ----------
-    title : _type_
-        _description_
-    x : _type_
-        _description_
-    y : _type_
-        _description_
-    length : _type_
-        _description_
+    title : str
+        colorbar title
+    x : float
+        x position relative to paper in [-0.2,1.2] ish
+    y : float
+        y position relative to paper in [-0.2,1.2] ish
+    length : float
+        length of colorbar
+    titleside : str, optional
+        'right' or None gives top, by default None
 
     Returns
     -------
-    _type_
+    colorbar : dict
         _description_
 
     Examples
@@ -649,12 +652,10 @@ def my_colorbar_subplot(title, x, y, length):
     ...     y=y_heat,
     ...     z=z_heat,
     ...     colorscale=grey_colorscale_discrete(z_heat), # or something
-    ...     colorbar=my_colorbar_subplot(
-    ...         "title", xpos, ypos, length)
+    ...     colorbar=my_colorbar_subplot("title", xpos, ypos, length)
     ... )
     """
     return dict(
-        # title=title,
         x=x,
         y=y,
         len=length,
@@ -662,5 +663,5 @@ def my_colorbar_subplot(title, x, y, length):
         tickfont=dict(size=12),
         title=dict(text=title,
                    font=dict(size=14)),
-        # titleside = 'right',
+        titleside=titleside
     )

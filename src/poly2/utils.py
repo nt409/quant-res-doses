@@ -319,10 +319,15 @@ def initial_point_distribution(n, mean):
 
 class Fungicide:
 
-    def __init__(self, num_sprays, dose):
+    def __init__(self, num_sprays, dose, decay_rate=None):
 
         # different for diff fungicides
-        self.decay_rate = FUNG_DECAY_RATE
+        if decay_rate is None:
+            self.decay_rate = FUNG_DECAY_RATE
+        else:
+            self.decay_rate = decay_rate
+
+        print(f'{self.decay_rate=}')
 
         self.dose = dose
 

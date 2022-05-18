@@ -382,7 +382,7 @@ class SimulatorOneTrait:
             strains_dict['fung'] = np.ones(len(trait_vec_dict['host']))
 
         # add other params
-        my_fungicide = Fungicide(num_sprays, dose)
+        my_fungicide = Fungicide(num_sprays, dose, self.config_o.decay_rate)
 
         # comes from utils
         host_growth_fn = host_growth_function
@@ -780,7 +780,7 @@ class SimulatorBothTraits:
         ode_solver.set_initial_value(self.y0, t_out[0])
 
         # add other params
-        my_fungicide = Fungicide(num_sprays, dose)
+        my_fungicide = Fungicide(num_sprays, dose, self.config_b.decay_rate)
 
         # comes from utils
         host_growth_fn = host_growth_function

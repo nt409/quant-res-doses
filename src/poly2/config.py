@@ -35,6 +35,8 @@ class Config:
         mutation_scale_host=DEFAULT_MUTATION_SCALE,
         mutation_scale_fung=DEFAULT_MUTATION_SCALE,
         #
+        decay_rate=None,
+        #
         verbose=True,
     ):
         """Config for polygenic model
@@ -96,11 +98,14 @@ class Config:
             Proportion of pathogen population that mutates.
             Between 0 and 1, by default 0
 
-        mutation_scale_fung : float/bool, optional
+        mutation_scale_fung : float, optional
             Scaling for mutation (assume gaussian dispersal), by default 0
 
-        mutation_scale_host : float/bool, optional
+        mutation_scale_host : float, optional
             Scaling for mutation (assume gaussian dispersal), by default 0
+
+        decay_rate : float, optional
+            Fungicide decay rate if want =/= default, by default None
 
         verbose : bool, optional
             whether to print out summary of config, by default True
@@ -140,6 +145,8 @@ class Config:
             self.replace_cultivars = replace_cultivars
         else:
             self.replace_cultivars = None
+
+        self.decay_rate = decay_rate
 
         #
         #

@@ -319,10 +319,25 @@ def initial_point_distribution(n, mean):
 
 class Fungicide:
 
-    def __init__(self, num_sprays, dose):
+    def __init__(self, num_sprays, dose, decay_rate=None):
+        """init method
 
-        # different for diff fungicides
-        self.decay_rate = FUNG_DECAY_RATE
+        Fungicide for a single year
+
+        Parameters
+        ----------
+        num_sprays : int
+            number of sprays per year
+        dose : float
+            dose applied
+        decay_rate : float, optional
+            fungicide decay rate, defaults to FUNG_DECAY_RATE if input is None
+        """
+
+        if decay_rate is None:
+            self.decay_rate = FUNG_DECAY_RATE
+        else:
+            self.decay_rate = decay_rate
 
         self.dose = dose
 
@@ -336,7 +351,7 @@ class Fungicide:
             self.sprays_list = []
 
     def effect(self, value_this_strain, t):
-        """_summary_
+        """Effect of fungicide at time t on a particular strain
 
         Parameters
         ----------
@@ -350,7 +365,6 @@ class Fungicide:
         rel_inf_rate
             factor by which infection rate is reduced
         """
-        # curvature_this_strain is for a dose of 1
 
         curvature_this_strain = log(1/value_this_strain)
 

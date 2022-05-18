@@ -24,9 +24,9 @@ def main(
         n_l=300,
     )
 
-    # don't want means to go to 1 (causes problems)
-    host_means = np.linspace(0.05, 1, 20)[:-1]
-    doses = np.linspace(0.1, 1, 10)
+    # don't want means to go to 1
+    host_means = np.linspace(0.01, 0.99, 20)
+    doses = np.linspace(0, 1, 20)
 
     host_ind = floor(run/len(doses))
     dose_ind = run % len(doses)

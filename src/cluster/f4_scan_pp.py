@@ -2,7 +2,8 @@
 
 import pandas as pd
 
-N_ITS = 190
+# N_ITS = 200
+N_ITS = 400
 N_K = 300
 N_L = 300
 
@@ -15,15 +16,6 @@ def combine():
     ])
 
     print(combined.shape)
-
-    # grouped = (
-    #     combined
-    #     .groupby(['sprays', 'dose', 'year'])
-    #     .median()
-    #     .reset_index()
-    # )
-
-    # print(grouped.shape)
 
     fn = '../outputs/combined/fig4.csv'
     print(f'saving to {fn}')

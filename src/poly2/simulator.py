@@ -48,7 +48,7 @@ class SimulatorOneTrait:
             a list in the config.
 
         number_of_sprays : int, optional
-            N sprays per year, overridden by custom sprays vec, by default 0
+            N sprays per year, by default 0
         """
 
         self.host_plant_on = host_plant_on
@@ -393,7 +393,7 @@ class SimulatorBothTraits:
             See docs for Config
 
         number_of_sprays : int, optional
-            N sprays per year, overridden by custom sprays vec, by default 0
+            N sprays per year, by default 0
         """
 
         self.number_of_sprays = number_of_sprays
@@ -746,7 +746,7 @@ class SimulatorMixture:
             See docs for Config
 
         number_of_sprays : int, optional
-            N sprays per year, overridden by custom sprays vec, by default 0
+            N sprays per year, by default 0
         """
 
         self.number_of_sprays = number_of_sprays

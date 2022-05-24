@@ -209,9 +209,9 @@ class SimulatorOneTrait:
         solution, fung_dist_out, host_dist_out = self._generate_new_dists(
             solution_tmp, D0_l, D0_k)
 
-        total_infection = [sum(solution[:-1, tt])
-                           for tt in range(len(solutiont))]
-        total_infection = np.asarray(total_infection)
+        total_infection = np.asarray(
+            [sum(solution[:-1, tt]) for tt in range(len(solutiont))]
+        )
 
         return solution, solutiont, fung_dist_out, host_dist_out, total_infection
 
@@ -230,29 +230,23 @@ class SimulatorOneTrait:
 
         S = y[-1]
 
-        old_I = y[:-1]
+        I_in = y[:-1]
 
-        new_I = np.matmul(mutation_array, old_I)
-
-        # host effect is same as value of strain
+        # host effect is value of strain (host on) or np.ones (host off)
         host_effect_vec = np.array(strains_dict['host'])
 
-        # fung effect is value of strain into fungicide effect function,
+        # fung effect is value of strain into fungicide effect function
         fung_effect_vec = np.array([
             fungicide.effect(strain, t) for strain in strains_dict['fung']
         ])
 
-        disease_states = host_effect_vec * fung_effect_vec * new_I
+        offspring = host_effect_vec * fung_effect_vec * I_in
 
-        dydt[:-1] = beta * S * disease_states
+        I_after_mutation = np.matmul(mutation_array, offspring)
 
-        dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states)
+        dydt[:-1] = beta * S * I_after_mutation
 
-        # # !!! below change makes density independent (S=1)
-
-        # dydt[:-1] = beta * disease_states
-
-        # dydt[-1] = - beta * sum(disease_states)
+        dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(I_after_mutation)
 
         return dydt
 
@@ -546,9 +540,9 @@ class SimulatorBothTraits:
         soln, fung_dist_out, host_dist_out = self._dists_fung_and_host(
             soln_tmp)
 
-        total_infection = [sum(soln[:-1, tt]) for tt in range(len(t_out))]
-
-        total_infection = np.asarray(total_infection)
+        total_infection = np.asarray(
+            [sum(soln[:-1, tt]) for tt in range(len(t_out))]
+        )
 
         return soln, t_out, fung_dist_out, host_dist_out, total_infection
 
@@ -563,48 +557,58 @@ class SimulatorBothTraits:
             host_kernel,
     ):
 
+        # 1. offspring
+        # 2. mutation
+
         dydt = np.zeros(len(self.y0))
 
         # host effect is same as value of strain
         host_effect_vec = np.asarray(self.l_vec)
 
-        # fung effect is value of strain into fungicide effect function
+        # FOR NO HOST EFFECT
+        # host_effect_vec = np.ones(self.n_l)
+
+        # fung effect is value of strain into fungicide effect function,
         fung_effect_vec = np.array([
             fungicide.effect(strain, t) for strain in self.k_vec
         ])
 
         S = y[-1]
 
-        old_I = y[:-1]
+        I_in = y[:-1]
 
-        I_array = np.reshape(old_I, (self.n_k, self.n_l))
+        I_array = np.reshape(I_in, (self.n_k, self.n_l))
 
         I_fung = I_array.sum(axis=1)
         I_host = I_array.sum(axis=0)
 
-        I_fung_mutated = np.matmul(fung_kernel, I_fung)
-        I_host_mutated = np.matmul(host_kernel, I_host)
-
         # scale both of these as a proportion
-        p_fung_mutated = I_fung_mutated / I_fung_mutated.sum()
-        p_host_mutated = I_host_mutated / I_host_mutated.sum()
+        p_fung = I_fung / I_fung.sum()
+        p_host = I_host / I_host.sum()
 
-        # think of as I_scaled * proportion in k bin * proportion in l bin
-        scale = sum(I_fung)
+        # 1. rate of offspring production depends on control of parent
+        fung_offspring = fung_effect_vec * p_fung
+        host_offspring = host_effect_vec * p_host
 
-        disease_states = np.outer(
-            fung_effect_vec * p_fung_mutated,
-            host_effect_vec * p_host_mutated
+        # 2. child may not have same trait as parent
+        fung_offsp_mut = np.matmul(fung_kernel, fung_offspring)
+        host_offsp_mut = np.matmul(host_kernel, host_offspring)
+
+        # convert back into vector with length n_k*n_l, scaled by sum(I_in)
+        scale = sum(I_in)
+
+        disease_states_array = np.outer(
+            fung_offsp_mut,
+            host_offsp_mut
         ) * scale
 
-        disease_states_use = np.reshape(
-            disease_states,
+        disease_states = np.reshape(
+            disease_states_array,
             (self.n_k*self.n_l)
         )
 
-        dydt[:-1] = beta * S * disease_states_use
-
-        dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states_use)
+        dydt[:-1] = beta * S * disease_states
+        dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states)
 
         return dydt
 
@@ -695,12 +699,12 @@ class SimulatorBothTraits:
 
         soln_large_array = np.zeros(((self.n_k, self.n_l, n_t_points)))
 
-        soln_small_array = np.reshape(
+        soln_array = np.reshape(
             solution[:-1, :],
             (I_end_array.shape[0], I_end_array.shape[1], n_t_points),
         )
 
-        soln_large_array = soln_small_array
+        soln_large_array = soln_array
 
         solution_out = np.zeros((self.n_k*self.n_l+1, n_t_points))
 
@@ -711,6 +715,8 @@ class SimulatorBothTraits:
 
         # susceptible tissue
         solution_out[-1, :] = solution[-1, :]
+
+        print(np.amax(solution_out-solution))
 
         return solution_out, fung_dist_out, host_dist_out
 
@@ -902,9 +908,9 @@ class SimulatorMixture:
         soln, fung_A_dist_out, fung_B_dist_out = self._dists_fung_A_B(
             soln_tmp)
 
-        total_infection = [sum(soln[:-1, tt]) for tt in range(len(t_out))]
-
-        total_infection = np.asarray(total_infection)
+        total_infection = np.asarray(
+            [sum(soln[:-1, tt]) for tt in range(len(t_out))]
+        )
 
         return soln, t_out, fung_A_dist_out, fung_B_dist_out, total_infection
 
@@ -920,6 +926,9 @@ class SimulatorMixture:
             fung_B_kernel,
     ):
 
+        # 1. offspring
+        # 2. mutation
+
         dydt = np.zeros(len(self.y0))
 
         fung_A_effect_vec = np.array([
@@ -932,36 +941,40 @@ class SimulatorMixture:
 
         S = y[-1]
 
-        old_I = y[:-1]
+        I_in = y[:-1]
 
-        I_array = np.reshape(old_I, (self.n_k, self.n_k))
+        I_array = np.reshape(I_in, (self.n_k, self.n_l))
 
-        I_fung_A = I_array.sum(axis=1)
-        I_fung_B = I_array.sum(axis=0)
-
-        I_fA_mutated = np.matmul(fung_A_kernel, I_fung_A)
-        I_fB_mutated = np.matmul(fung_B_kernel, I_fung_B)
+        I_fung = I_array.sum(axis=1)
+        I_host = I_array.sum(axis=0)
 
         # scale both of these as a proportion
-        p_fA_mutated = I_fA_mutated / I_fA_mutated.sum()
-        p_fB_mutated = I_fB_mutated / I_fB_mutated.sum()
+        p_fung = I_fung / I_fung.sum()
+        p_host = I_host / I_host.sum()
 
-        # think of as I_scaled * proportion in k bin * proportion in l bin
-        scale = sum(I_fung_A)
+        # 1. rate of offspring production depends on control of parent
+        fffA_offspring = fung_A_effect_vec * p_fung
+        fffB_offspring = fung_B_effect_vec * p_host
 
-        disease_states = np.outer(
-            fung_A_effect_vec * p_fA_mutated,
-            fung_B_effect_vec * p_fB_mutated
+        # 2. child may not have same trait as parent
+        fffA_offsp_mut = np.matmul(fung_A_kernel, fffA_offspring)
+        fffB_offsp_mut = np.matmul(fung_B_kernel, fffB_offspring)
+
+        # convert back into vector with length n_k*n_l, scaled by sum(I_in)
+        scale = sum(I_in)
+
+        disease_states_array = np.outer(
+            fffA_offsp_mut,
+            fffB_offsp_mut
         ) * scale
 
-        disease_states_use = np.reshape(
-            disease_states,
-            (self.n_k*self.n_k)
+        disease_states = np.reshape(
+            disease_states_array,
+            (self.n_k*self.n_l)
         )
 
-        dydt[:-1] = beta * S * disease_states_use
-
-        dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states_use)
+        dydt[:-1] = beta * S * disease_states
+        dydt[-1] = host_growth_fn(t, S, y) - beta * S * sum(disease_states)
 
         return dydt
 

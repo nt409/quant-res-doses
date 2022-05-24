@@ -54,7 +54,10 @@ class SimulatorOneTrait:
         self.host_plant_on = host_plant_on
         self.fungicide_on = fungicide_on
 
-        self.number_of_sprays = number_of_sprays
+        if host_plant_on:
+            self.number_of_sprays = 0
+        else:
+            self.number_of_sprays = number_of_sprays
 
         self.conf_o = config
         self.mutation_array = None
@@ -235,7 +238,6 @@ class SimulatorOneTrait:
         host_effect_vec = np.array(strains_dict['host'])
 
         # fung effect is value of strain into fungicide effect function,
-        # which depends on dose
         fung_effect_vec = np.array([
             fungicide.effect(strain, t) for strain in strains_dict['fung']
         ])
@@ -294,13 +296,6 @@ class SimulatorOneTrait:
 
     def _solve_it(self, beta_in, num_sprays, dose):
 
-        strains_dict = {}
-
-        trait_vec_dict = {
-            'host': np.asarray(self.l_vec),
-            'fung': np.asarray(self.k_vec),
-        }
-
         ode_solver = ode(self._ode_system_with_mutation)
 
         ode_solver.set_integrator('dopri5', max_step=10)
@@ -311,15 +306,16 @@ class SimulatorOneTrait:
 
         ode_solver.set_initial_value(self.y0, t_vec[0])
 
+        strains_dict = {}
         if self.fungicide_on and not self.host_plant_on:
             # NB looking to match length of active fung trait vector, not host
-            strains_dict['host'] = np.ones(len(trait_vec_dict['fung']))
-            strains_dict['fung'] = trait_vec_dict['fung']
+            strains_dict['host'] = np.ones(self.n_k)
+            strains_dict['fung'] = np.asarray(self.k_vec)
 
         elif not self.fungicide_on and self.host_plant_on:
             # NB looking to match length of active host trait vector, not fung
-            strains_dict['host'] = trait_vec_dict['host']
-            strains_dict['fung'] = np.ones(len(trait_vec_dict['host']))
+            strains_dict['host'] = np.asarray(self.l_vec)
+            strains_dict['fung'] = np.ones(self.n_l)
 
         # add other params
         my_fungicide = Fungicide(num_sprays, dose, self.conf_o.decay_rate)
@@ -572,8 +568,7 @@ class SimulatorBothTraits:
         # host effect is same as value of strain
         host_effect_vec = np.asarray(self.l_vec)
 
-        # fung effect is value of strain into fungicide effect function,
-        # which depends on dose
+        # fung effect is value of strain into fungicide effect function
         fung_effect_vec = np.array([
             fungicide.effect(strain, t) for strain in self.k_vec
         ])

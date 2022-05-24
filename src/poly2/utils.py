@@ -74,6 +74,7 @@ def ode_simple(t, y, beta_):
 
 
 def find_soln_given_beta_and_no_control(beta_, I0=DEFAULT_I0, t_vals=None):
+
     y0 = np.array([
         PARAMS.host_growth_initial_area*(1-I0),
         PARAMS.host_growth_initial_area*I0
@@ -319,7 +320,7 @@ def initial_point_distribution(n, mean):
 
 class Fungicide:
 
-    def __init__(self, num_sprays, dose, decay_rate=None):
+    def __init__(self, num_sprays, dose, decay_rate=FUNG_DECAY_RATE):
         """init method
 
         Fungicide for a single year
@@ -331,13 +332,10 @@ class Fungicide:
         dose : float
             dose applied
         decay_rate : float, optional
-            fungicide decay rate, defaults to FUNG_DECAY_RATE if input is None
+            fungicide decay rate, default FUNG_DECAY_RATE
         """
 
-        if decay_rate is None:
-            self.decay_rate = FUNG_DECAY_RATE
-        else:
-            self.decay_rate = decay_rate
+        self.decay_rate = decay_rate
 
         self.dose = dose
 

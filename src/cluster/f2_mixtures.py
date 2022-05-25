@@ -28,6 +28,9 @@ def main(run, n_years=15):
         dose_B=db,
     )
 
+    cf.A_mu = 4
+    cf.B_mu = 7
+
     data = no_joblib_simulations_run(cf)
 
     output = data['spray_2_host_N']

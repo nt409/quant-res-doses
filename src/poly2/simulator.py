@@ -4,9 +4,10 @@ from scipy.integrate import ode
 from poly2.params import PARAMS
 from poly2.utils import (
     Fungicide,
+    disease_severity,
     get_dist_mean,
-    yield_function,
-    economic_yield_function,
+    yield_fn,
+    economic_yield,
     host_growth_function,
     trait_vec,
     initial_host_dist,
@@ -73,6 +74,8 @@ class SimulatorOneTrait:
         self.k_vec = trait_vec(self.n_k)
         self.l_vec = trait_vec(self.n_l)
 
+        self.t = get_model_times()
+
         self.initial_k_dist = initial_fung_dist(self.n_k, self.k_a, self.k_b)
         self.initial_l_dist = initial_host_dist(self.n_l, self.l_a, self.l_b)
 
@@ -124,41 +127,23 @@ class SimulatorOneTrait:
         sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
 
         self._get_mutation_kernels()
-        #
-        # run 0th year
-        (
-            sol, t, fung_dists[:, 1], host_dists[:, 1], total_infection
-        ) = self.calculate_ode_soln(
-            fung_dists[:, 0],
-            host_dists[:, 0],
-            self.conf_o.I0s[0],
-            self.conf_o.betas[0],
-            sprays_vec_use[0],
-            self.conf_o.doses[0],
-        )
 
-        # get shape of solution arrays from the output
-        sol_list = np.zeros((sol.shape[0], sol.shape[1], self.n_years))
-        total_I = np.zeros((len(t), self.n_years))
+        if self.fungicide_on and not self.host_plant_on:
+            y_len = self.n_k+1
+        elif self.host_plant_on and not self.fungicide_on:
+            y_len = self.n_l+1
 
-        # set the first year
-        sol_list[:, :, 0] = sol
-        total_I[:, 0] = total_infection
-        dis_sev[0] = total_I[-1, 0]
-
-        final_S = sol_list[-1, -1, 0]
-        dis_sev[0] = dis_sev[0] / (dis_sev[0] + final_S)
-
-        if replace_cultivar_array is not None and replace_cultivar_array[0]:
-            host_dists[:, 1] = self.initial_l_dist
+        sol_arr = np.zeros((y_len, len(self.t), self.n_years))
+        total_I = np.zeros((len(self.t), self.n_years))
 
         #
-        # calculate the rest of the years
-        for yr in range(1, self.n_years):
+        for yr in range(self.n_years):
 
             (
-                sol_list[:, :, yr], t, fung_dists[:, yr+1],
-                host_dists[:, yr+1], total_I[:, yr]
+                sol_arr[:, :, yr],
+                fung_dists[:, yr+1],
+                host_dists[:, yr+1],
+                total_I[:, yr]
             ) = self.calculate_ode_soln(
                 fung_dists[:, yr],
                 host_dists[:, yr],
@@ -168,20 +153,16 @@ class SimulatorOneTrait:
                 self.conf_o.doses[yr],
             )
 
-            final_I = total_I[-1, yr]
-
-            # scale so proportion of final leaf size
-            final_S = sol_list[-1, -1, yr]
-            dis_sev[yr] = final_I / (final_I + final_S)
-
             if (replace_cultivar_array is not None
                     and replace_cultivar_array[yr]):
                 host_dists[:, yr+1] = self.initial_l_dist
 
-        # calculate yield and economic yield
-        yield_vec = [yield_function(sev) for sev in dis_sev]
+        # calculate disease severity, yield and economic yield
+        dis_sev = disease_severity(total_I[-1, :], sol_arr[-1, -1, :])
 
-        econ = economic_yield_function(
+        yield_vec = np.array([yield_fn(sev) for sev in dis_sev])
+
+        econ = economic_yield(
             yield_vec, sprays_vec_use, self.conf_o.doses)
 
         fung_mean = get_dist_mean(fung_dists, self.k_vec)
@@ -198,28 +179,27 @@ class SimulatorOneTrait:
             'l_vec': self.l_vec,
             'I0s': self.conf_o.I0s,
             'betas': self.conf_o.betas,
-            't': t,
-            'y': sol_list,
+            't': self.t,
+            'y': sol_arr,
             'total_I': total_I,
             'dis_sev': dis_sev,
-            'yield_vec': np.asarray(yield_vec),
-            'econ': np.asarray(econ)
+            'yield_vec': yield_vec,
+            'econ': econ
         }
 
     def calculate_ode_soln(self, D0_k, D0_l, I0_in, beta_in, num_sprays, dose):
 
         self._get_y0(I0_in, D0_l, D0_k)
 
-        solution_tmp, solutiont = self._solve_it(beta_in, num_sprays, dose)
+        soln = self._solve_it(beta_in, num_sprays, dose)
 
-        solution, fung_dist_out, host_dist_out = self._generate_new_dists(
-            solution_tmp, D0_l, D0_k)
-
-        total_infection = np.asarray(
-            [sum(solution[:-1, tt]) for tt in range(len(solutiont))]
+        fung_dist_out, host_dist_out = self._generate_new_dists(
+            soln, D0_l, D0_k
         )
 
-        return solution, solutiont, fung_dist_out, host_dist_out, total_infection
+        total_infection = soln[:-1, :].sum(axis=0)
+
+        return soln, fung_dist_out, host_dist_out, total_infection
 
     def _ode_system_with_mutation(
             self,
@@ -300,21 +280,19 @@ class SimulatorOneTrait:
 
         ode_solver.set_integrator('dopri5', max_step=10)
 
-        t_vec = get_model_times()
+        y_out = np.zeros((self.y0.shape[0], len(self.t)))
 
-        y_out = np.zeros((self.y0.shape[0], len(t_vec)))
-
-        ode_solver.set_initial_value(self.y0, t_vec[0])
+        ode_solver.set_initial_value(self.y0, self.t[0])
 
         strains_dict = {}
         if self.fungicide_on and not self.host_plant_on:
             # NB looking to match length of active fung trait vector, not host
             strains_dict['host'] = np.ones(self.n_k)
-            strains_dict['fung'] = np.asarray(self.k_vec)
+            strains_dict['fung'] = np.array(self.k_vec)
 
         elif not self.fungicide_on and self.host_plant_on:
             # NB looking to match length of active host trait vector, not fung
-            strains_dict['host'] = np.asarray(self.l_vec)
+            strains_dict['host'] = np.array(self.l_vec)
             strains_dict['fung'] = np.ones(self.n_l)
 
         # add other params
@@ -328,7 +306,7 @@ class SimulatorOneTrait:
             self.mutation_array
         )
 
-        for ind, tt in enumerate(t_vec[1:]):
+        for ind, tt in enumerate(self.t[1:]):
             if ode_solver.successful():
                 y_out[:, ind] = ode_solver.y
                 ode_solver.integrate(tt)
@@ -337,34 +315,21 @@ class SimulatorOneTrait:
 
         y_out[:, -1] = ode_solver.y
 
-        return y_out, t_vec
+        return y_out
 
     def _generate_new_dists(self, solution, D0_l, D0_k):
 
         I_end = normalise(solution[:-1, -1])
 
-        n_t_points = solution.shape[1]
-
         if self.fungicide_on and not self.host_plant_on:
-            soln_out = np.zeros((self.n_k+1, n_t_points))
-            soln_out[:-1, :] = solution[:-1, :]
-
-            fung_dist_out = np.zeros(self.n_k)
             fung_dist_out = I_end
             host_dist_out = D0_l
 
         elif self.host_plant_on and not self.fungicide_on:
-            soln_out = np.zeros((self.n_l+1, n_t_points))
-            soln_out[:-1, :] = solution[:-1, :]
-
-            host_dist_out = np.zeros(self.n_l)
             host_dist_out = I_end
             fung_dist_out = D0_k
 
-        # susceptible tissue
-        soln_out[-1, :] = solution[-1, :]
-
-        return soln_out, fung_dist_out, host_dist_out
+        return fung_dist_out, host_dist_out
 
 
 #
@@ -407,6 +372,8 @@ class SimulatorBothTraits:
         self.k_vec = trait_vec(self.n_k)
         self.l_vec = trait_vec(self.n_l)
 
+        self.t = get_model_times()
+
         self.fung_kernel = None
         self.host_kernel = None
 
@@ -426,8 +393,14 @@ class SimulatorBothTraits:
             - fung_dists: np.array, shape (n_k, n_years+1) - includes year 0
             - host_dists: np.array, shape (n_l, n_years+1)
 
+            - fung_mean_A: np.array, shape (n_years+1,) - includes year 0
+            - fung_mean_B: np.array, shape (n_years+1,) - includes year 0
+
             - n_k: int
             - n_l: int
+
+            - k_vec: np.array, shape (n_k, )
+            - l_vec: np.array, shape (n_l, )
 
             - I0s: np.array, shape (n_years, )
             - betas: np.array, shape (n_years, )
@@ -454,42 +427,28 @@ class SimulatorBothTraits:
 
         sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
 
-        self._get_kernels()
-        #
-        # run 0th year
-        (
-            sol, t, fung_dists[:, 1], host_dists[:, 1], total_infection
-        ) = self.calculate_ode_soln(
-            fung_dists[:, 0],
-            host_dists[:, 0],
-            self.conf_b.I0s[0],
-            self.conf_b.betas[0],
-            sprays_vec_use[0],
-            self.conf_b.doses[0],
+        self.fung_kernel = get_dispersal_kernel(
+            self.k_vec,
+            self.conf_b.mutation_proportion,
+            self.conf_b.mutation_scale_fung,
         )
 
-        # get shape of solution arrays from the output
-        sol_list = np.zeros((sol.shape[0], sol.shape[1], self.n_years))
-        total_I = np.zeros((len(t), self.n_years))
+        self.host_kernel = get_dispersal_kernel(
+            self.l_vec,
+            self.conf_b.mutation_proportion,
+            self.conf_b.mutation_scale_host,
+        )
 
-        # set the first year
-        sol_list[:, :, 0] = sol
-        total_I[:, 0] = total_infection
-        final_I = total_I[-1, 0]
+        sol_arr = np.zeros((self.n_k*self.n_l+1, len(self.t), self.n_years))
+        total_I = np.zeros((len(self.t), self.n_years))
 
-        final_S = sol_list[-1, -1, 0]
-        dis_sev[0] = final_I / (final_I + final_S)
-
-        if replace_cultivar_array is not None and replace_cultivar_array[0]:
-            host_dists[:, 1] = self.initial_l_dist
-
-        #
-        # calculate the rest of the years
-        for yr in range(1, self.n_years):
+        for yr in range(self.n_years):
 
             (
-                sol_list[:, :, yr], t, fung_dists[:, yr+1],
-                host_dists[:, yr+1], total_I[:, yr]
+                sol_arr[:, :, yr],
+                fung_dists[:, yr+1],
+                host_dists[:, yr+1],
+                total_I[:, yr]
             ) = self.calculate_ode_soln(
                 fung_dists[:, yr],
                 host_dists[:, yr],
@@ -499,20 +458,16 @@ class SimulatorBothTraits:
                 self.conf_b.doses[yr],
             )
 
-            final_I = total_I[-1, yr]
-
-            # scale so proportion of final leaf size
-            final_S = sol_list[-1, -1, yr]
-            dis_sev[yr] = final_I / (final_I + final_S)
-
             if (replace_cultivar_array is not None
                     and replace_cultivar_array[yr]):
                 host_dists[:, yr+1] = self.initial_l_dist
 
-        # calculate yield and economic yield
-        yield_vec = [yield_function(sev) for sev in dis_sev]
+        # calculate disease severity, yield and economic yield
+        dis_sev = disease_severity(total_I[-1, :], sol_arr[-1, -1, :])
 
-        econ = economic_yield_function(
+        yield_vec = np.array([yield_fn(sev) for sev in dis_sev])
+
+        econ = economic_yield(
             yield_vec, sprays_vec_use, self.conf_b.doses)
 
         fung_mean = get_dist_mean(fung_dists, self.k_vec)
@@ -529,28 +484,25 @@ class SimulatorBothTraits:
             'l_vec': self.l_vec,
             'I0s': self.conf_b.I0s,
             'betas': self.conf_b.betas,
-            't': t,
-            'y': sol_list,
+            't': self.t,
+            'y': sol_arr,
             'total_I': total_I,
             'dis_sev': dis_sev,
-            'yield_vec': np.asarray(yield_vec),
-            'econ': np.asarray(econ)
+            'yield_vec': yield_vec,
+            'econ': econ
         }
 
     def calculate_ode_soln(self, D0_k, D0_l, I0_in, beta_in, num_sprays, dose):
 
         self._get_y0(I0_in, D0_l, D0_k)
 
-        soln_tmp, t_out = self._solve_it(beta_in, num_sprays, dose)
+        soln = self._solve_it(beta_in, num_sprays, dose)
 
-        soln, fung_dist_out, host_dist_out = self._dists_fung_and_host(
-            soln_tmp)
+        fung_dist_out, host_dist_out = self._dists_fung_and_host(soln)
 
-        total_infection = np.asarray(
-            [sum(soln[:-1, tt]) for tt in range(len(t_out))]
-        )
+        total_infection = soln[:-1, :].sum(axis=0)
 
-        return soln, t_out, fung_dist_out, host_dist_out, total_infection
+        return soln, fung_dist_out, host_dist_out, total_infection
 
     def _ode_system_host_and_fung(
             self,
@@ -569,7 +521,7 @@ class SimulatorBothTraits:
         dydt = np.zeros(len(self.y0))
 
         # host effect is same as value of strain
-        host_effect_vec = np.asarray(self.l_vec)
+        host_effect_vec = np.array(self.l_vec)
 
         # FOR NO HOST EFFECT
         # host_effect_vec = np.ones(self.n_l)
@@ -641,31 +593,15 @@ class SimulatorBothTraits:
 
         self.y0 = PARAMS.host_growth_initial_area*y0_use
 
-    def _get_kernels(self):
-
-        self.fung_kernel = get_dispersal_kernel(
-            self.k_vec,
-            self.conf_b.mutation_proportion,
-            self.conf_b.mutation_scale_fung,
-        )
-
-        self.host_kernel = get_dispersal_kernel(
-            self.l_vec,
-            self.conf_b.mutation_proportion,
-            self.conf_b.mutation_scale_host,
-        )
-
     def _solve_it(self, beta_in, num_sprays, dose):
 
         ode_solver = ode(self._ode_system_host_and_fung)
 
         ode_solver.set_integrator('dopri5', max_step=10)
 
-        t_vec = get_model_times()
+        y_out = np.zeros((self.y0.shape[0], len(self.t)))
 
-        y_out = np.zeros((self.y0.shape[0], len(t_vec)))
-
-        ode_solver.set_initial_value(self.y0, t_vec[0])
+        ode_solver.set_initial_value(self.y0, self.t[0])
 
         # add other params
         my_fungicide = Fungicide(num_sprays, dose, self.conf_b.decay_rate)
@@ -678,7 +614,7 @@ class SimulatorBothTraits:
             self.host_kernel,
         )
 
-        for ind, tt in enumerate(t_vec[1:]):
+        for ind, tt in enumerate(self.t[1:]):
             if ode_solver.successful():
                 y_out[:, ind] = ode_solver.y
                 ode_solver.integrate(tt)
@@ -687,12 +623,10 @@ class SimulatorBothTraits:
 
         y_out[:, -1] = ode_solver.y
 
-        return y_out, t_vec
+        return y_out
 
     def _dists_fung_and_host(self, solution):
         I_end = solution[:-1, -1]
-
-        n_t_points = solution.shape[1]
 
         I_end_array = np.reshape(I_end, (self.n_k, self.n_l))
 
@@ -703,32 +637,7 @@ class SimulatorBothTraits:
         fung_dist_out = normalise(I0_k_end)
         host_dist_out = normalise(I0_l_end)
 
-        # REMOVE?
-
-        soln_large_array = np.zeros(((self.n_k, self.n_l, n_t_points)))
-
-        soln_array = np.reshape(
-            solution[:-1, :],
-            (I_end_array.shape[0], I_end_array.shape[1], n_t_points),
-        )
-
-        soln_large_array = soln_array
-
-        solution_out = np.zeros((self.n_k*self.n_l+1, n_t_points))
-
-        solution_out[:-1, :] = np.reshape(
-            soln_large_array,
-            (self.n_k * self.n_l, n_t_points),
-        )
-
-        # susceptible tissue
-        solution_out[-1, :] = solution[-1, :]
-
-        # END REMOVE?
-
-        print(np.amax(solution_out-solution))
-
-        return solution_out, fung_dist_out, host_dist_out
+        return fung_dist_out, host_dist_out
 
 
 class SimulatorMixture:
@@ -776,6 +685,8 @@ class SimulatorMixture:
 
         self.k_vec = trait_vec(self.n_k)
 
+        self.t = get_model_times()
+
         self.fung_A_kernel = None
         self.fung_B_kernel = None
 
@@ -821,44 +732,31 @@ class SimulatorMixture:
         fung_dists_A[:, 0] = self.initial_fA_dist
         fung_dists_B[:, 0] = self.initial_fB_dist
 
-        dis_sev = np.zeros(self.n_years)
-
         sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
 
-        self._get_kernels()
-        #
-        # run 0th year
-        (
-            sol, t, fung_dists_A[:, 1], fung_dists_B[:, 1], total_infection
-        ) = self.calculate_ode_soln(
-            fung_dists_A[:, 0],
-            fung_dists_B[:, 0],
-            self.conf_m.I0s[0],
-            self.conf_m.betas[0],
-            sprays_vec_use[0],
-            self.conf_m.doses_A[0],
-            self.conf_m.doses_B[0],
+        sol_arr = np.zeros((self.n_k*self.n_k+1, len(self.t), self.n_years))
+
+        total_I = np.zeros((len(self.t), self.n_years))
+
+        self.fung_A_kernel = get_dispersal_kernel(
+            self.k_vec,
+            self.conf_m.mutation_proportion,
+            self.conf_m.mutation_scale_fung,
         )
 
-        # get shape of solution arrays from the output
-        sol_list = np.zeros((sol.shape[0], sol.shape[1], self.n_years))
-        total_I = np.zeros((len(t), self.n_years))
+        self.fung_B_kernel = get_dispersal_kernel(
+            self.k_vec,
+            self.conf_m.mutation_proportion,
+            self.conf_m.mutation_scale_fung,
+        )
 
-        # set the first year
-        sol_list[:, :, 0] = sol
-        total_I[:, 0] = total_infection
-        final_I = total_I[-1, 0]
-
-        final_S = sol_list[-1, -1, 0]
-        dis_sev[0] = final_I / (final_I + final_S)
-
-        #
-        # calculate the rest of the years
-        for yr in range(1, self.n_years):
+        for yr in range(self.n_years):
 
             (
-                sol_list[:, :, yr], t, fung_dists_A[:, yr+1],
-                fung_dists_B[:, yr+1], total_I[:, yr]
+                sol_arr[:, :, yr],
+                fung_dists_A[:, yr+1],
+                fung_dists_B[:, yr+1],
+                total_I[:, yr]
             ) = self.calculate_ode_soln(
                 fung_dists_A[:, yr],
                 fung_dists_B[:, yr],
@@ -869,16 +767,15 @@ class SimulatorMixture:
                 self.conf_m.doses_B[yr],
             )
 
-            final_I = total_I[-1, yr]
+            #
+            #
 
-            # scale so proportion of final leaf size
-            final_S = sol_list[-1, -1, yr]
-            dis_sev[yr] = final_I / (final_I + final_S)
+        # calculate disease severity, yield and economic yield
+        dis_sev = disease_severity(total_I[-1, :], sol_arr[-1, -1, :])
 
-        # calculate yield and economic yield
-        yield_vec = [yield_function(sev) for sev in dis_sev]
+        yield_vec = np.array([yield_fn(sev) for sev in dis_sev])
 
-        econ = economic_yield_function(
+        econ = economic_yield(
             yield_vec,
             sprays_vec_use,
             self.conf_m.doses_A
@@ -896,12 +793,12 @@ class SimulatorMixture:
             'k_vec': self.k_vec,
             'I0s': self.conf_m.I0s,
             'betas': self.conf_m.betas,
-            't': t,
-            'y': sol_list,
+            't': self.t,
+            'y': sol_arr,
             'total_I': total_I,
             'dis_sev': dis_sev,
-            'yield_vec': np.asarray(yield_vec),
-            'econ': np.asarray(econ)
+            'yield_vec': yield_vec,
+            'econ': econ
         }
 
     def calculate_ode_soln(
@@ -917,16 +814,13 @@ class SimulatorMixture:
 
         self._get_y0(I0_in, D0_l, D0_k)
 
-        soln_tmp, t_out = self._solve_it(beta_in, num_sprays, dose, dose_B)
+        soln = self._solve_it(beta_in, num_sprays, dose, dose_B)
 
-        soln, fung_A_dist_out, fung_B_dist_out = self._dists_fung_A_B(
-            soln_tmp)
+        fung_A_dist_out, fung_B_dist_out = self._get_final_dists(soln)
 
-        total_infection = np.asarray(
-            [sum(soln[:-1, tt]) for tt in range(len(t_out))]
-        )
+        total_infection = soln[:-1, :].sum(axis=0)
 
-        return soln, t_out, fung_A_dist_out, fung_B_dist_out, total_infection
+        return soln, fung_A_dist_out, fung_B_dist_out, total_infection
 
     def _ode_system_fung_mixture(
             self,
@@ -1015,31 +909,15 @@ class SimulatorMixture:
 
         self.y0 = PARAMS.host_growth_initial_area*y0_use
 
-    def _get_kernels(self):
-
-        self.fung_A_kernel = get_dispersal_kernel(
-            self.k_vec,
-            self.conf_m.mutation_proportion,
-            self.conf_m.mutation_scale_fung,
-        )
-
-        self.fung_B_kernel = get_dispersal_kernel(
-            self.k_vec,
-            self.conf_m.mutation_proportion,
-            self.conf_m.mutation_scale_fung,
-        )
-
     def _solve_it(self, beta_in, num_sprays, dose_A, dose_B):
 
         ode_solver = ode(self._ode_system_fung_mixture)
 
         ode_solver.set_integrator('dopri5', max_step=10)
 
-        t_vec = get_model_times()
+        y_out = np.zeros((self.y0.shape[0], len(self.t)))
 
-        y_out = np.zeros((self.y0.shape[0], len(t_vec)))
-
-        ode_solver.set_initial_value(self.y0, t_vec[0])
+        ode_solver.set_initial_value(self.y0, self.t[0])
 
         # add other params
         fungicide_A = Fungicide(num_sprays, dose_A, self.conf_m.decay_rate_A)
@@ -1054,7 +932,7 @@ class SimulatorMixture:
             self.fung_B_kernel,
         )
 
-        for ind, tt in enumerate(t_vec[1:]):
+        for ind, tt in enumerate(self.t[1:]):
             if ode_solver.successful():
                 y_out[:, ind] = ode_solver.y
                 ode_solver.integrate(tt)
@@ -1063,39 +941,17 @@ class SimulatorMixture:
 
         y_out[:, -1] = ode_solver.y
 
-        return y_out, t_vec
+        return y_out
 
-    def _dists_fung_A_B(self, solution):
+    def _get_final_dists(self, solution):
         I_end = solution[:-1, -1]
-
-        n_t_points = solution.shape[1]
 
         I_end_array = np.reshape(I_end, (self.n_k, self.n_k))
 
         I0_A_end = I_end_array.sum(axis=1)
-
         I0_B_end = I_end_array.sum(axis=0)
 
         fA_dist_out = normalise(I0_A_end)
         fB_dist_out = normalise(I0_B_end)
 
-        soln_large_array = np.zeros(((self.n_k, self.n_k, n_t_points)))
-
-        soln_small_array = np.reshape(
-            solution[:-1, :],
-            (I_end_array.shape[0], I_end_array.shape[1], n_t_points),
-        )
-
-        soln_large_array = soln_small_array
-
-        solution_out = np.zeros((self.n_k*self.n_k+1, n_t_points))
-
-        solution_out[:-1, :] = np.reshape(
-            soln_large_array,
-            (self.n_k * self.n_k, n_t_points),
-        )
-
-        # susceptible tissue
-        solution_out[-1, :] = solution[-1, :]
-
-        return solution_out, fA_dist_out, fB_dist_out
+        return fA_dist_out, fB_dist_out

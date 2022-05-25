@@ -177,7 +177,7 @@ def host_growth_function(t, S, y):
     return out
 
 
-def yield_function(sev):
+def yield_fn(sev):
     # Load GAM
     filename = 'gam.pickle'
     with open(filename, 'rb') as f:
@@ -188,7 +188,7 @@ def yield_function(sev):
     return out
 
 
-def economic_yield_function(yield_vec, sprays_vec, doses):
+def economic_yield(yield_vec, sprays_vec, doses):
 
     yield_vec = np.array(yield_vec)
     sprays_vec = np.array(sprays_vec)
@@ -202,6 +202,17 @@ def economic_yield_function(yield_vec, sprays_vec, doses):
     profit = revenue - cost_application - cost_fungicide
 
     return profit
+
+
+def disease_severity(final_Is, final_Ss):
+
+    final_Is = np.array(final_Is)
+    final_Ss = np.array(final_Ss)
+
+    # scale so proportion of final leaf size
+    sev = final_Is / (final_Is + final_Ss)
+
+    return sev
 
 
 def keys_from_config(config_in):
@@ -316,6 +327,9 @@ class Fungicide:
         """init method
 
         Fungicide for a single year
+
+        Needs decay_rate=None not =FUNG_DECAY_RATE, since input often 'None'
+        rather than not included
 
         Parameters
         ----------

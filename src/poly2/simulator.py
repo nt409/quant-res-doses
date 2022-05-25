@@ -89,8 +89,14 @@ class SimulatorOneTrait:
             - fung_dists: np.array, shape (n_k, n_years+1) - includes year 0
             - host_dists: np.array, shape (n_l, n_years+1)
 
+            - fung_mean_A: np.array, shape (n_years+1,) - includes year 0
+            - fung_mean_B: np.array, shape (n_years+1,) - includes year 0
+
             - n_k: int
             - n_l: int
+
+            - k_vec: np.array, shape (n_k, )
+            - l_vec: np.array, shape (n_l, )
 
             - I0s: np.array, shape (n_years, )
             - betas: np.array, shape (n_years, )
@@ -697,6 +703,8 @@ class SimulatorBothTraits:
         fung_dist_out = normalise(I0_k_end)
         host_dist_out = normalise(I0_l_end)
 
+        # REMOVE?
+
         soln_large_array = np.zeros(((self.n_k, self.n_l, n_t_points)))
 
         soln_array = np.reshape(
@@ -715,6 +723,8 @@ class SimulatorBothTraits:
 
         # susceptible tissue
         solution_out[-1, :] = solution[-1, :]
+
+        # END REMOVE?
 
         print(np.amax(solution_out-solution))
 

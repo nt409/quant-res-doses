@@ -26,10 +26,12 @@ def main(run, n_years=15):
         n_k=300,
         dose_A=da,
         dose_B=db,
+        decay_rate_A=6.91e-3,
+        decay_rate_B=1.11e-2,
     )
 
-    cf.A_mu = 4
-    cf.B_mu = 7
+    # cf.A_mu = 4
+    # cf.B_mu = 7
 
     data = no_joblib_simulations_run(cf)
 

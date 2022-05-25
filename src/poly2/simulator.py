@@ -5,6 +5,7 @@ from poly2.params import PARAMS
 from poly2.utils import (
     Fungicide,
     disease_severity,
+    economic_yield_mixture,
     get_dist_mean,
     yield_fn,
     economic_yield,
@@ -124,7 +125,7 @@ class SimulatorOneTrait:
 
         dis_sev = np.zeros(self.n_years)
 
-        sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
+        sprays_vec = self.number_of_sprays*np.ones(self.n_years)
 
         self._get_mutation_kernels()
 
@@ -149,7 +150,7 @@ class SimulatorOneTrait:
                 host_dists[:, yr],
                 self.conf_o.I0s[yr],
                 self.conf_o.betas[yr],
-                sprays_vec_use[yr],
+                sprays_vec[yr],
                 self.conf_o.doses[yr],
             )
 
@@ -163,7 +164,7 @@ class SimulatorOneTrait:
         yield_vec = np.array([yield_fn(sev) for sev in dis_sev])
 
         econ = economic_yield(
-            yield_vec, sprays_vec_use, self.conf_o.doses)
+            yield_vec, sprays_vec, self.conf_o.doses)
 
         fung_mean = get_dist_mean(fung_dists, self.k_vec)
         host_mean = get_dist_mean(host_dists, self.l_vec)
@@ -425,7 +426,7 @@ class SimulatorBothTraits:
 
         dis_sev = np.zeros(self.n_years)
 
-        sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
+        sprays_vec = self.number_of_sprays*np.ones(self.n_years)
 
         self.fung_kernel = get_dispersal_kernel(
             self.k_vec,
@@ -454,7 +455,7 @@ class SimulatorBothTraits:
                 host_dists[:, yr],
                 self.conf_b.I0s[yr],
                 self.conf_b.betas[yr],
-                sprays_vec_use[yr],
+                sprays_vec[yr],
                 self.conf_b.doses[yr],
             )
 
@@ -468,7 +469,7 @@ class SimulatorBothTraits:
         yield_vec = np.array([yield_fn(sev) for sev in dis_sev])
 
         econ = economic_yield(
-            yield_vec, sprays_vec_use, self.conf_b.doses)
+            yield_vec, sprays_vec, self.conf_b.doses)
 
         fung_mean = get_dist_mean(fung_dists, self.k_vec)
         host_mean = get_dist_mean(host_dists, self.l_vec)
@@ -732,7 +733,7 @@ class SimulatorMixture:
         fung_dists_A[:, 0] = self.initial_fA_dist
         fung_dists_B[:, 0] = self.initial_fB_dist
 
-        sprays_vec_use = self.number_of_sprays*np.ones(self.n_years)
+        sprays_vec = self.number_of_sprays*np.ones(self.n_years)
 
         sol_arr = np.zeros((self.n_k*self.n_k+1, len(self.t), self.n_years))
 
@@ -762,7 +763,7 @@ class SimulatorMixture:
                 fung_dists_B[:, yr],
                 self.conf_m.I0s[yr],
                 self.conf_m.betas[yr],
-                sprays_vec_use[yr],
+                sprays_vec[yr],
                 self.conf_m.doses_A[yr],
                 self.conf_m.doses_B[yr],
             )
@@ -775,10 +776,11 @@ class SimulatorMixture:
 
         yield_vec = np.array([yield_fn(sev) for sev in dis_sev])
 
-        econ = economic_yield(
+        econ = economic_yield_mixture(
             yield_vec,
-            sprays_vec_use,
-            self.conf_m.doses_A
+            sprays_vec,
+            self.conf_m.doses_A,
+            self.conf_m.doses_B,
         )
 
         fung_mean_A = get_dist_mean(fung_dists_A, self.k_vec)

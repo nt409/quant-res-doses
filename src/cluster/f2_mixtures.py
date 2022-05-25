@@ -35,7 +35,7 @@ def main(run, n_years=15):
     out = get_dataframe(output, run, da, db)
 
     conf_str = f'{run}_{cf.n_k}'
-    out.to_csv(f'../outputs/fig2_{conf_str}.csv')
+    out.to_csv(f'../outputs/fig2_{conf_str}.csv', index=False)
 
     return None
 

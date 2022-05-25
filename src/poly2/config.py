@@ -377,7 +377,6 @@ class ConfigMixture:
         else:
             self.type = type
 
-        # self.I0_single = DEFAULT_I0
         self.I0s = DEFAULT_I0 * np.ones(self.n_years)
 
         if self.type == 'single':

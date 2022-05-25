@@ -142,7 +142,6 @@ def find_beta(final_sev, I0=DEFAULT_I0):
     beta_val = min_out.x[0]
 
     if min_out.success and beta_val < bds[1] and beta_val > bds[0]:
-        # print('ok', min_out.x[0])
         return min_out.x[0]
 
     else:
@@ -175,16 +174,11 @@ def host_growth_function(t, S, y):
 
     out = growth - senescence*S
 
-    # return 0
-
     return out
 
 
-# print('Host Growth Off!!!')
-
-
 def yield_function(sev):
-    # Load Gam
+    # Load GAM
     filename = 'gam.pickle'
     with open(filename, 'rb') as f:
         gam = pickle.load(f)
@@ -203,7 +197,7 @@ def economic_yield_function(yield_vec, sprays_vec, doses):
     cost_application = PARAMS.application_cost_per_spray * sprays_vec
     cost_fungicide = PARAMS.chemical_cost_per_spray * sprays_vec * doses
 
-    revenue = yield_vec * PARAMS.wheat_price
+    revenue = PARAMS.wheat_price * yield_vec
 
     profit = revenue - cost_application - cost_fungicide
 
@@ -248,7 +242,6 @@ def initial_host_dist(n, a, b):
 
 
 def initial_fung_dist(n, a, b):
-    # return beta_dist(n, a, b)
     return gamma_dist(n, a, b)
 
 
@@ -315,7 +308,6 @@ def initial_point_distribution(n, mean):
 #
 #
 #
-# print('FUNGICIDE NO LONGER DECAYS!!!')
 
 
 class Fungicide:
@@ -369,14 +361,8 @@ class Fungicide:
         concentration = 0
 
         for T_spray in self.sprays_list:
-
-            # WITH DECAY
             if t > T_spray:
                 concentration += self.dose * exp(-self.decay_rate*(t-T_spray))
-
-            # # !!! NO DECAY
-            # if t > T_spray and t < T_spray+240:
-            #     concentration = self.dose
 
         if concentration == 0:
             return 1

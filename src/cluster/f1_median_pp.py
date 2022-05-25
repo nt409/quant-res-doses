@@ -1,4 +1,4 @@
-"""For Figure 2"""
+"""For Figure 1"""
 
 import pandas as pd
 
@@ -10,7 +10,7 @@ N_L = 50
 def combine():
 
     combined = pd.concat([
-        pd.read_csv(f'../outputs/fig2_{ii}_{N_K}_{N_L}.csv')
+        pd.read_csv(f'../outputs/fig1_{ii}_{N_K}_{N_L}.csv')
         for ii in range(N_ITS)
     ])
 
@@ -26,7 +26,7 @@ def combine():
 
     print(grouped.shape)
 
-    fn = '../outputs/combined/fig2.csv'
+    fn = '../outputs/combined/fig1.csv'
     print(f'saving to {fn}')
     grouped.to_csv(fn, index=False)
 

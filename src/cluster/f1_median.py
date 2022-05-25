@@ -1,4 +1,4 @@
-"""For Figure 2"""
+"""For Figure 1"""
 
 import sys
 
@@ -53,7 +53,7 @@ def main(
     out = out.reset_index(drop=True)
 
     conf_str = f'{run}_{cmh.n_k}_{cmh.n_l}'
-    out.to_csv(f'../outputs/fig2_{conf_str}.csv')
+    out.to_csv(f'../outputs/fig1_{conf_str}.csv')
 
     return None
 

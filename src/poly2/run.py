@@ -23,8 +23,7 @@ memory = Memory('../joblib_cache/', verbose=1)
 
 
 @memory.cache
-def simulations_run(config,
-                    verbose=True):
+def simulations_run(config, verbose=True):
     """Run polygenic model
 
     Parameters
@@ -90,10 +89,7 @@ def multiple_run(config):
 #
 
 
-def no_joblib_simulations_run(
-    config,
-    verbose=True,
-):
+def no_joblib_simulations_run(config, verbose=True):
     """See docs above for joblib version"""
 
     if verbose:

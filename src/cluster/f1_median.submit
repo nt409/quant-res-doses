@@ -1,7 +1,7 @@
 #!/bin/bash
 #! Make sure all the SBATCH directives go in this section and no other commands
 #! Name of the job:
-#SBATCH -J fig2_median
+#SBATCH -J fig1_median
 #! Project name for Cunniffe group, use SL2 for paying queue:
 #SBATCH -A CUNNIFFE-SL3-CPU
 #! Output filename:
@@ -66,4 +66,4 @@ conda activate poly2_env
 #! The variable $SLURM_ARRAY_TASK_ID contains the array index for each job.
 #! In this example, each job will be passed its index
 
-python -m cluster.f2_median $SLURM_ARRAY_TASK_ID
+python -m cluster.f1_median $SLURM_ARRAY_TASK_ID

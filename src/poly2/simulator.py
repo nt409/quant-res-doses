@@ -785,8 +785,12 @@ class SimulatorMixture:
             - fung_dists_A: np.array, shape (n_k, n_years+1) - includes year 0
             - fung_dists_B: np.array, shape (n_k, n_years+1) - includes year 0
 
+            - fung_mean_A: np.array, shape (n_years+1,) - includes year 0
+            - fung_mean_B: np.array, shape (n_years+1,) - includes year 0
+
             - n_k: int
-            - n_l: int
+
+            - k_vec: list
 
             - I0s: np.array, shape (n_years, )
             - betas: np.array, shape (n_years, )
@@ -943,7 +947,7 @@ class SimulatorMixture:
 
         I_in = y[:-1]
 
-        I_array = np.reshape(I_in, (self.n_k, self.n_l))
+        I_array = np.reshape(I_in, (self.n_k, self.n_k))
 
         I_fung = I_array.sum(axis=1)
         I_host = I_array.sum(axis=0)
@@ -960,7 +964,7 @@ class SimulatorMixture:
         fffA_offsp_mut = np.matmul(fung_A_kernel, fffA_offspring)
         fffB_offsp_mut = np.matmul(fung_B_kernel, fffB_offspring)
 
-        # convert back into vector with length n_k*n_l, scaled by sum(I_in)
+        # convert back into vector with length n_k*n_k, scaled by sum(I_in)
         scale = sum(I_in)
 
         disease_states_array = np.outer(
@@ -970,7 +974,7 @@ class SimulatorMixture:
 
         disease_states = np.reshape(
             disease_states_array,
-            (self.n_k*self.n_l)
+            (self.n_k*self.n_k)
         )
 
         dydt[:-1] = beta * S * disease_states

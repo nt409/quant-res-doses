@@ -20,7 +20,7 @@ def combine(n_its, n_k):
 
 
 if __name__ == "__main__":
-    N_ITS = 440
+    N_ITS = 441
     N_K = 300
 
     combine(N_ITS, N_K)

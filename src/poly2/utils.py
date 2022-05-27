@@ -204,6 +204,26 @@ def economic_yield(yield_vec, sprays_vec, doses):
     return profit
 
 
+def economic_yield_mixture(yield_vec, sprays_vec, doses_A, doses_B):
+
+    yield_vec = np.array(yield_vec)
+    sprays_vec = np.array(sprays_vec)
+    doses_A = np.array(doses_A)
+    doses_B = np.array(doses_B)
+
+    cost_application = PARAMS.application_cost_per_spray * sprays_vec
+
+    cost_fungicide = PARAMS.chemical_cost_per_spray * sprays_vec * (
+        doses_A + doses_B
+    )
+
+    revenue = PARAMS.wheat_price * yield_vec
+
+    profit = revenue - cost_application - cost_fungicide
+
+    return profit
+
+
 def disease_severity(final_Is, final_Ss):
 
     final_Is = np.array(final_Is)

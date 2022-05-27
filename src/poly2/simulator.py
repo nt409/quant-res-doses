@@ -22,6 +22,12 @@ from poly2.utils import (
 
 class SimulatorOneTrait:
     """Sets up and runs a single model simulation for fung OR host trait.
+
+    Example
+    -------
+    >>>cf = Config()
+    >>># or e.g. Config(sprays=[2], host_on=[False])
+    >>>data = SimulatorOneTrait(cf).run_model()
     """
 
     def __init__(
@@ -29,7 +35,7 @@ class SimulatorOneTrait:
         config,
         fungicide_on=True,
         host_plant_on=False,
-        number_of_sprays=0,
+        number_of_sprays=2,
     ):
         """Init method
 
@@ -339,12 +345,18 @@ class SimulatorOneTrait:
 
 class SimulatorBothTraits:
     """Sets up and runs a single model simulation in the fung AND host case
+
+    Example
+    -------
+    >>>cf = Config()
+    >>># or e.g. Config(sprays=[2], host_on=[False])
+    >>>data = SimulatorBothTraits(cf).run_model()
     """
 
     def __init__(
         self,
         config,
-        number_of_sprays=0,
+        number_of_sprays=2,
     ):
         """Init method
 
@@ -645,18 +657,14 @@ class SimulatorMixture:
 
     Examples
     --------
-    >>>cmix = Config(
-    ... fungicide_mixture=True,
-    ... dose=0.5,
-    ... dose_B=0.25,
-    ... )
-    >>>data = SimulatorMixture(cmix, number_of_sprays=2).run_model()
+    >>>cmix = ConfigMixture(dose=0.5, dose_B=0.25)
+    >>>data = SimulatorMixture(cmix).run_model()
     """
 
     def __init__(
         self,
         config,
-        number_of_sprays=0,
+        number_of_sprays=2,
     ):
         """Init method
 

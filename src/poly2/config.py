@@ -228,7 +228,6 @@ class ConfigMixture:
         n_years=15,
         #
         mutation_proportion=MUTATION_PROP,
-        mutation_scale_host=DEFAULT_MUTATION_SCALE,
         mutation_scale_fung=DEFAULT_MUTATION_SCALE,
         #
         decay_rate_A=None,
@@ -279,9 +278,6 @@ class ConfigMixture:
             Between 0 and 1, by default 0
 
         mutation_scale_fung : float, optional
-            Scaling for mutation (assume gaussian dispersal), by default 0
-
-        mutation_scale_host : float, optional
             Scaling for mutation (assume gaussian dispersal), by default 0
 
         decay_rate_A : float, optional
@@ -349,7 +345,6 @@ class ConfigMixture:
         # PATHOGEN
         self.mutation_proportion = mutation_proportion
 
-        self.mutation_scale_host = mutation_scale_host
         self.mutation_scale_fung = mutation_scale_fung
 
         fit = pd.read_csv('../data/fitted.csv')
@@ -357,8 +352,7 @@ class ConfigMixture:
         assert len((
             fit.loc[(
                 (np.isclose(fit.mutation_prop, mutation_proportion)) &
-                (np.isclose(fit.mutation_scale_fung, mutation_scale_fung)) &
-                (np.isclose(fit.mutation_scale_host, mutation_scale_host))
+                (np.isclose(fit.mutation_scale_fung, mutation_scale_fung))
             )]
         )) == 2
 

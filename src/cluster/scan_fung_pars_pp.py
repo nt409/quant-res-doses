@@ -5,7 +5,7 @@ import pandas as pd
 from poly2.utils import monotonic_yld
 
 N_ITS = 200
-N_K = 30
+N_K = 300
 N_L = 50
 
 

@@ -650,3 +650,13 @@ def get_model_times():
     times = sorted(times)
     times = np.asarray(times)
     return times
+
+
+#
+#
+# Post process cluster stuff
+#
+def monotonic_yld(df):
+    du = df.sort_values('dose')
+    diffs = du.yld.diff()
+    return sum(diffs > 0)

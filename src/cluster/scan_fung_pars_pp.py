@@ -12,7 +12,7 @@ N_L = 50
 def combine():
 
     combined = pd.concat([
-        pd.read_csv(f'../outputs/scan_fung_{ii}_{N_K}_{N_L}.csv')
+        pd.read_csv(f'../outputs/scan_fung_pars_{ii}_{N_K}_{N_L}.csv')
         for ii in range(N_ITS)
     ])
 
@@ -32,13 +32,13 @@ def combine():
         .join(
             combined
             .groupby('run').mean()
-            .loc[:, ['mu', 'b']]
+            .loc[:, ['asymptote', 'dec_rate_multiplier']]
         )
     )
 
     print(out.shape)
 
-    fn = '../outputs/combined/fung_scan.csv'
+    fn = '../outputs/combined/fung_pars_scan.csv'
     print(f'saving to {fn}')
     out.to_csv(fn, index=False)
 

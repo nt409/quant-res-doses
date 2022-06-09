@@ -1,4 +1,4 @@
-"""Fung scan over initial distributions"""
+"""Fung scan over asymptote and decay rate"""
 
 import sys
 
@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 from poly2.config import Config
+from poly2.consts import FUNG_DECAY_RATE
 from poly2.simulator import SimulatorOneTrait
-from poly2.utils import gamma_dist
 
 
 def main(
@@ -18,7 +18,7 @@ def main(
 
     cf = Config(
         n_years=n_years,
-        n_k=30,
+        n_k=300,
         n_l=50,
         verbose=False
     )
@@ -29,21 +29,17 @@ def main(
 
     for ii in range(n_its):
 
-        mu = -1
-        while mu < 0.5 or mu > 20:
-            a = np.random.uniform(0, 40)
-            b = np.random.uniform(0, 20)
-            mu = a/b
+        asymptote = np.random.uniform(0, 1)
+        d_rate_multiplier = np.random.uniform(1/3, 3)
 
-        init_dist = gamma_dist(cf.n_k, a, b)
+        cf.asymptote = asymptote
+        cf.decay_rate = FUNG_DECAY_RATE * d_rate_multiplier
 
         for dose in np.linspace(0.1, 1, 10):
 
             cf.doses = dose*np.ones(cf.n_years)
 
             sim = SimulatorOneTrait(cf)
-
-            sim.initial_k_dist = init_dist
 
             data = sim.run_model()
 
@@ -56,9 +52,8 @@ def main(
                 .assign(
                     dose=dose,
                     run=run*n_its + ii,
-                    a=a,
-                    b=b,
-                    mu=mu,
+                    asymptote=asymptote,
+                    dec_rate_multiplier=d_rate_multiplier,
                 )
             )
 
@@ -73,7 +68,7 @@ def main(
     out = out.reset_index(drop=True)
 
     conf_str = f'{run}_{cf.n_k}_{cf.n_l}'
-    out.to_csv(f'../outputs/scan_fung_{conf_str}.csv', index=False)
+    out.to_csv(f'../outputs/scan_fung_pars_{conf_str}.csv', index=False)
 
     return None
 
@@ -85,4 +80,4 @@ if __name__ == '__main__':
 
     run_index = int(sys.argv[1])
 
-    main(run_index, n_years=50, n_its=5)
+    main(run_index, n_years=100, n_its=5)

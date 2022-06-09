@@ -314,7 +314,12 @@ class SimulatorOneTrait:
             strains_dict['fung'] = np.ones(self.n_l)
 
         # add other params
-        my_fungicide = Fungicide(num_sprays, dose, self.conf_o.decay_rate)
+        my_fungicide = Fungicide(
+            num_sprays,
+            dose,
+            self.conf_o.decay_rate,
+            self.conf_o.asymptote,
+        )
 
         ode_solver.set_f_params(
             beta_in,
@@ -628,7 +633,12 @@ class SimulatorBothTraits:
         ode_solver.set_initial_value(self.y0, self.t[0])
 
         # add other params
-        my_fungicide = Fungicide(num_sprays, dose, self.conf_b.decay_rate)
+        my_fungicide = Fungicide(
+            num_sprays,
+            dose,
+            self.conf_b.decay_rate,
+            self.conf_b.asymptote,
+        )
 
         ode_solver.set_f_params(
             beta_in,
@@ -946,8 +956,18 @@ class SimulatorMixture:
         ode_solver.set_initial_value(self.y0, self.t[0])
 
         # add other params
-        fungicide_A = Fungicide(num_sprays, dose_A, self.conf_m.decay_rate_A)
-        fungicide_B = Fungicide(num_sprays, dose_B, self.conf_m.decay_rate_B)
+        fungicide_A = Fungicide(
+            num_sprays,
+            dose_A,
+            self.conf_m.decay_rate_A,
+            self.conf_m.asymptote_A,
+        )
+        fungicide_B = Fungicide(
+            num_sprays,
+            dose_B,
+            self.conf_m.decay_rate_B,
+            self.conf_m.asymptote_B,
+        )
 
         ode_solver.set_f_params(
             beta_in,

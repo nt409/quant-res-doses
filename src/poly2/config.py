@@ -116,6 +116,9 @@ class Config:
         decay_rate : float, optional
             Fungicide decay rate if want =/= default, by default None
 
+        asymptote : float, optional
+            Fungicide asymptote if want =/= default, in [0,1], by default None
+
         dose : float, optional
             use dose * np.ones(n_years), by default None
             If None, use np.ones(n_years)
@@ -243,6 +246,9 @@ class ConfigMixture:
         decay_rate_A=None,
         decay_rate_B=None,
         #
+        asymptote_A=None,
+        asymptote_B=None,
+        #
         dose_A=None,
         dose_B=None,
         #
@@ -297,6 +303,12 @@ class ConfigMixture:
             Fungicide decay rate if want =/= default, and using fungicide
             mixture, by default None
 
+        asymptote_A : float, optional
+            Fungicide asymptote if want =/= default, in [0,1] by default None
+
+        asymptote_B : float, optional
+            Fungicide asymptote if want =/= default, in [0,1] by default None
+
         dose_A : float, optional
             use dose * np.ones(n_years), by default None
             If None, use np.ones(n_years)
@@ -335,6 +347,9 @@ class ConfigMixture:
 
         self.decay_rate_A = decay_rate_A
         self.decay_rate_B = decay_rate_B
+
+        self.asymptote_A = asymptote_A
+        self.asymptote_B = asymptote_B
 
         if dose_A is None:
             self.doses_A = np.ones(self.n_years)

@@ -18,7 +18,7 @@ def main(
 
     cf = Config(
         n_years=n_years,
-        n_k=300,
+        n_k=30,
         n_l=50,
         verbose=False
     )

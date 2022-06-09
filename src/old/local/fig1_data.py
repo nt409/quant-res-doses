@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 
 from poly2.config import Config
-from poly2.run import no_joblib_simulations_run
+from poly2.run import no_joblib_single_run
 from poly2.utils import get_dist_mean, get_dist_var
 
 
@@ -52,7 +52,7 @@ def main(doses, n_years=15):
 
     for dose in tqdm(doses):
 
-        run_output = no_joblib_simulations_run(
+        run_output = no_joblib_single_run(
             cmh,
             doses=dose*np.ones(n_years)
         )

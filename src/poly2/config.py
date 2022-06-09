@@ -1,5 +1,13 @@
 """
 This file sets up the parameters for the polygenic model
+
+Two setups:
+- Config (one or two traits valid here)
+- ConfigMixture (two fungicides)
+
+
+And a single function:
+print_str_repr
 """
 
 import numpy as np
@@ -36,6 +44,7 @@ class Config:
         mutation_scale_fung=DEFAULT_MUTATION_SCALE,
         #
         decay_rate=None,
+        asymptote=None,
         #
         dose=None,
         #
@@ -143,6 +152,7 @@ class Config:
         self.n_l = n_l
 
         self.decay_rate = decay_rate
+        self.asymptote = asymptote
 
         if dose is None:
             self.doses = np.ones(self.n_years)

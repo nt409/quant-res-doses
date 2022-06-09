@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from poly2.config import ConfigMixture
-from poly2.run import no_joblib_simulations_run
+from poly2.run import no_joblib_single_run
 
 
 def main(run, n_years=15):
@@ -33,7 +33,7 @@ def main(run, n_years=15):
     # cf.A_mu = 4
     # cf.B_mu = 7
 
-    data = no_joblib_simulations_run(cf)
+    data = no_joblib_single_run(cf)
 
     output = data['spray_2_host_N']
 

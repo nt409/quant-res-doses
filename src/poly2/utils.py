@@ -194,7 +194,11 @@ def economic_yield(yield_vec, sprays_vec, doses):
     sprays_vec = np.array(sprays_vec)
     doses = np.array(doses)
 
-    cost_application = PARAMS.application_cost_per_spray * sprays_vec
+    did_apply_bool = doses > 0
+
+    applied = did_apply_bool.astype(int)
+
+    cost_application = PARAMS.application_cost_per_spray * sprays_vec * applied
     cost_fungicide = PARAMS.chemical_cost_per_spray * sprays_vec * doses
 
     revenue = PARAMS.wheat_price * yield_vec
@@ -211,7 +215,16 @@ def economic_yield_mixture(yield_vec, sprays_vec, doses_A, doses_B):
     doses_A = np.array(doses_A)
     doses_B = np.array(doses_B)
 
-    cost_application = PARAMS.application_cost_per_spray * sprays_vec
+    did_apply_bool_A = doses_A > 0
+    did_apply_bool_B = doses_B > 0
+
+    applied_A = did_apply_bool_A.astype(int)
+    applied_B = did_apply_bool_B.astype(int)
+
+    applied = (applied_A + applied_B)
+    applied[applied > 0] = 1
+
+    cost_application = PARAMS.application_cost_per_spray * sprays_vec * applied
 
     cost_fungicide = PARAMS.chemical_cost_per_spray * sprays_vec * (
         doses_A + doses_B
@@ -251,7 +264,7 @@ def keys_from_config(config_in):
 
 #
 #
-# Replacement for TraitVecs
+# Distribution stuff:
 
 
 def edge_values(n):
@@ -340,10 +353,11 @@ def initial_point_distribution(n, mean):
 #
 #
 
+# Fungicide stuff
 
 class Fungicide:
 
-    def __init__(self, num_sprays, dose, decay_rate=None):
+    def __init__(self, num_sprays, dose, decay_rate=None, asymptote=None):
         """init method
 
         Fungicide for a single year
@@ -359,12 +373,83 @@ class Fungicide:
             dose applied
         decay_rate : float, optional
             fungicide decay rate, default FUNG_DECAY_RATE if input was None
+        asymptote : float, optional
+            in (0,1), default is 1 if input was None
         """
 
         if decay_rate is None:
             self.decay_rate = FUNG_DECAY_RATE
         else:
             self.decay_rate = decay_rate
+
+        if asymptote is None:
+            self.asymptote = 1
+        else:
+            self.asymptote = asymptote
+
+        self.dose = dose
+
+        if num_sprays == 1:
+            self.sprays_list = [PARAMS.T_2]
+        elif num_sprays == 2:
+            self.sprays_list = [PARAMS.T_2, PARAMS.T_3]
+        elif num_sprays == 3:
+            self.sprays_list = [PARAMS.T_1, PARAMS.T_2, PARAMS.T_3]
+        else:
+            self.sprays_list = []
+
+    def effect(self, value_this_strain, t):
+        """Effect of fungicide at time t on a particular strain
+
+        Parameters
+        ----------
+        value_this_strain : float
+            Trait value between 0 and 1
+        t : float
+            time (between T_1=1456 and T_end=2515)
+
+        Returns
+        -------
+        rel_inf_rate
+            factor by which infection rate is reduced
+        """
+
+        curv = log(1/value_this_strain)
+
+        # if have asymptote w
+        w = self.asymptote
+
+        concentration = 0
+
+        for T_spray in self.sprays_list:
+            if t > T_spray:
+                concentration += self.dose * exp(-self.decay_rate*(t-T_spray))
+
+        if concentration == 0:
+            return 1
+
+        else:
+            # rel_inf_rate = exp(- curv*concentration)
+
+            rel_inf_rate = 1 - w + w*exp(- curv*concentration)
+
+            return rel_inf_rate
+
+
+class FungicideNoDecay:
+
+    def __init__(self, num_sprays, dose):
+        """init method
+
+        Fungicide for a single year
+
+        Parameters
+        ----------
+        num_sprays : int
+            number of sprays per year
+        dose : float
+            dose applied
+        """
 
         self.dose = dose
 
@@ -398,8 +483,8 @@ class Fungicide:
         concentration = 0
 
         for T_spray in self.sprays_list:
-            if t > T_spray:
-                concentration += self.dose * exp(-self.decay_rate*(t-T_spray))
+            if t > T_spray and t < T_spray+240:
+                concentration = self.dose
 
         if concentration == 0:
             return 1
@@ -465,6 +550,8 @@ def get_dist_var(dist, traitvec):
             variances[yy] += dist[dd, yy]*(traitvec[dd] - means[yy])**2
 
     return variances
+
+# For simulator:
 
 
 def get_host_dist_params_from_config(config):

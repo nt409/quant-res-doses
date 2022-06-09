@@ -1,6 +1,12 @@
 """
 Convenient wrappers for running model, can instead directly run
 SimulatorOneTrait or SimulatorBothTraits
+
+functions:
+- single_run (caches result)
+- no_joblib_single_run (doesn't cache result)
+- multiple_run (doesn't cache result)
+- no_joblib_multiple_run (doesn't cache result)
 """
 
 import copy
@@ -23,7 +29,7 @@ memory = Memory('../joblib_cache/', verbose=1)
 
 
 @memory.cache
-def simulations_run(config, verbose=True):
+def single_run(config, verbose=True):
     """Run polygenic model
 
     Parameters
@@ -51,7 +57,7 @@ def simulations_run(config, verbose=True):
     ... )
     >>>data = simulations_run(config_single)
     """
-    return no_joblib_simulations_run(config, verbose)
+    return no_joblib_single_run(config, verbose)
 
 
 @memory.cache
@@ -89,7 +95,7 @@ def multiple_run(config):
 #
 
 
-def no_joblib_simulations_run(config, verbose=True):
+def no_joblib_single_run(config, verbose=True):
     """See docs above for joblib version"""
 
     if verbose:
@@ -166,7 +172,7 @@ def no_joblib_multiple_run(config):
 
         conf_use.betas = np.asarray(betas_sample_from[ii, :])
 
-        model_output_dict = no_joblib_simulations_run(
+        model_output_dict = no_joblib_single_run(
             conf_use,
             verbose=False
         )

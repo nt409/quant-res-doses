@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from poly2.config import Config
-from poly2.run import no_joblib_simulations_run
+from poly2.run import no_joblib_single_run
 
 
 def main(
@@ -34,7 +34,7 @@ def main(
     cmh.l_mu = host_means[host_ind]
     dose = doses[dose_ind]
 
-    data_out = no_joblib_simulations_run(
+    data_out = no_joblib_single_run(
         cmh,
         doses=dose*np.ones(n_years)
     )

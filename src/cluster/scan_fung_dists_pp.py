@@ -24,11 +24,23 @@ def combine():
         .rename(columns={0: 'n_pos_diff'})
     )
 
-    print(diffs.shape)
+    out = (
+        diffs
+        .set_index('run')
+        .join(
+            combined
+            .groupby('run').mean()
+            # .reset_index()
+            # .set_index('run')
+            .loc[:, ['mu', 'b']]
+        )
+    )
+
+    print(out.shape)
 
     fn = '../outputs/combined/fung_scan.csv'
     print(f'saving to {fn}')
-    diffs.to_csv(fn, index=False)
+    out.to_csv(fn, index=False)
 
     return None
 

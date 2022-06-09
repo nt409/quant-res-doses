@@ -29,11 +29,9 @@ def main(
 
     for ii in range(n_its):
 
-        mu = -1
-        while mu < 0.5 or mu > 20:
-            a = np.random.uniform(0, 40)
-            b = np.random.uniform(0, 20)
-            mu = a/b
+        b = np.random.uniform(0, 5)
+        mu = np.random.uniform(0, 25)
+        a = mu*b
 
         init_dist = gamma_dist(cf.n_k, a, b)
 
@@ -85,4 +83,4 @@ if __name__ == '__main__':
 
     run_index = int(sys.argv[1])
 
-    main(run_index, n_years=50, n_its=5)
+    main(run_index, n_years=100, n_its=5)

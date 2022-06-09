@@ -57,13 +57,7 @@ def main(
                 )
             )
 
-            out = pd.concat(
-                [
-                    out,
-                    tmp
-                ],
-                ignore_index=True
-            )
+            out = pd.concat([out, tmp], ignore_index=True)
 
     out = out.reset_index(drop=True)
 

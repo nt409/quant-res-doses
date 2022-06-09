@@ -1,13 +1,19 @@
-"""Fung scan over initial distributions"""
+"""
+Fung scan over 'everything' - fung dist, asymptote, decay rate, mutation scale
+and proportion.
+
+"""
 
 import sys
 
 import numpy as np
 import pandas as pd
+from poly2.utils import gamma_dist
+from scipy.stats import loguniform
 
 from poly2.config import Config
+from poly2.consts import FUNG_DECAY_RATE, MUTATION_PROP, MUTATION_SCALE
 from poly2.simulator import SimulatorOneTrait
-from poly2.utils import gamma_dist
 
 
 def main(
@@ -34,6 +40,22 @@ def main(
         a = mu*b
 
         init_dist = gamma_dist(cf.n_k, a, b)
+        #
+        #
+
+        asymptote = np.random.uniform(0, 1)
+        d_rate_multiplier = np.random.uniform(1/3, 3)
+
+        cf.asymptote = asymptote
+        cf.decay_rate = FUNG_DECAY_RATE * d_rate_multiplier
+        #
+        #
+
+        m_prop_multiplier = loguniform.rvs(1e-1, 10, size=1)
+        m_scale_multiplier = loguniform.rvs(1e-1, 10, size=1)
+
+        cf.mutation_proportion = MUTATION_PROP * m_prop_multiplier
+        cf.mutation_scale_fung = MUTATION_SCALE * m_scale_multiplier
 
         for dose in np.linspace(0.1, 1, 10):
 
@@ -54,9 +76,12 @@ def main(
                 .assign(
                     dose=dose,
                     run=run*n_its + ii,
-                    a=a,
-                    b=b,
                     mu=mu,
+                    b=b,
+                    asymptote=asymptote,
+                    dec_rate_multiplier=d_rate_multiplier,
+                    m_prop_multiplier=m_prop_multiplier,
+                    m_scale_multiplier=m_scale_multiplier,
                 )
             )
 
@@ -65,7 +90,7 @@ def main(
     out = out.reset_index(drop=True)
 
     conf_str = f'{run}_{cf.n_k}_{cf.n_l}'
-    out.to_csv(f'../outputs/scan_fung_{conf_str}.csv', index=False)
+    out.to_csv(f'../outputs/scan_all_{conf_str}.csv', index=False)
 
     return None
 

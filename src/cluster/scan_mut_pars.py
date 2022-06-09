@@ -1,4 +1,4 @@
-"""Fung scan over asymptote and decay rate"""
+"""Fung scan over mutation params"""
 
 import sys
 
@@ -58,13 +58,7 @@ def main(
                 )
             )
 
-            out = pd.concat(
-                [
-                    out,
-                    tmp
-                ],
-                ignore_index=True
-            )
+            out = pd.concat([out, tmp], ignore_index=True)
 
     out = out.reset_index(drop=True)
 

@@ -25,7 +25,6 @@ def main(
     cf = Config(
         n_years=n_years,
         n_k=300,
-        n_l=50,
         verbose=False
     )
 
@@ -51,8 +50,8 @@ def main(
         #
         #
 
-        m_prop_multiplier = loguniform.rvs(1e-1, 10, size=1)
-        m_scale_multiplier = loguniform.rvs(1e-1, 10, size=1)
+        m_prop_multiplier = float(loguniform.rvs(1e-1, 10, size=1))
+        m_scale_multiplier = float(loguniform.rvs(1e-1, 10, size=1))
 
         cf.mutation_proportion = MUTATION_PROP * m_prop_multiplier
         cf.mutation_scale_fung = MUTATION_SCALE * m_scale_multiplier

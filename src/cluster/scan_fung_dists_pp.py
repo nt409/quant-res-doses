@@ -16,11 +16,27 @@ def combine():
 
     print(combined.shape)
 
+    diffs = (
+        combined
+        .groupby(['run', 'year'])
+        .apply(monotonic_yld)
+        .reset_index()
+        .rename(columns={0: 'n_pos_diff'})
+    )
+
+    print(diffs.shape)
+
     fn = '../outputs/combined/fung_scan.csv'
     print(f'saving to {fn}')
-    combined.to_csv(fn, index=False)
+    diffs.to_csv(fn, index=False)
 
     return None
+
+
+def monotonic_yld(df):
+    du = df.sort_values('dose')
+    diffs = du.yld.diff()
+    return sum(diffs > 0)
 
 
 if __name__ == "__main__":

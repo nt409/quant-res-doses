@@ -41,6 +41,7 @@ def combine():
             yld_diffs
             .set_index(['run', 'year'])
         )
+        .reset_index()
     )
 
     run_info = (
@@ -55,6 +56,7 @@ def combine():
         by_run_year
         .set_index('run')
         .join(run_info)
+        .reset_index()
     )
 
     print(out.shape)

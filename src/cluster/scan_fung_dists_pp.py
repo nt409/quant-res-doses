@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from poly2.utils import best_dose, monotonic_yld
+from poly2.utils import summarise_by_run_and_year
 
 N_ITS = 200
 N_K = 300
@@ -18,37 +18,13 @@ def combine():
 
     print(combined.shape)
 
-    yld_diffs = (
-        combined
-        .groupby(['run', 'year'])
-        .apply(monotonic_yld)
-        .reset_index()
-        .rename(columns={0: 'n_pos_diff'})
-    )
-
-    best_doses = (
-        combined
-        .groupby(['run', 'year'])
-        .apply(best_dose)
-        .reset_index()
-        .rename(columns={0: 'best_dose'})
-    )
-
-    by_run_year = (
-        best_doses.set_index(['run', 'year'])
-        .join(
-            yld_diffs.set_index(['run', 'year'])
-        )
-        .reset_index()
-    )
+    by_run_year = summarise_by_run_and_year(combined)
 
     run_info = (
         combined
         .groupby('run').mean()
         .loc[:, ['mu', 'b']]
     )
-
-    print(by_run_year.head())
 
     out = (
         by_run_year

@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from poly2.utils import monotonic_yld
+from poly2.utils import summarise_by_run_and_year
 
 N_ITS = 200
 N_K = 300
@@ -18,22 +18,19 @@ def combine():
 
     print(combined.shape)
 
-    diffs = (
+    by_run_year = summarise_by_run_and_year(combined)
+
+    run_info = (
         combined
-        .groupby(['run', 'year'])
-        .apply(monotonic_yld)
-        .reset_index()
-        .rename(columns={0: 'n_pos_diff'})
+        .groupby('run').mean()
+        .loc[:, ['asymptote', 'dec_rate_multiplier']]
     )
 
     out = (
-        diffs
+        by_run_year
         .set_index('run')
-        .join(
-            combined
-            .groupby('run').mean()
-            .loc[:, ['asymptote', 'dec_rate_multiplier']]
-        )
+        .join(run_info)
+        .reset_index()
     )
 
     print(out.shape)

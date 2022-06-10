@@ -666,3 +666,52 @@ def best_dose(df):
     du = df.sort_values('yld', ascending=False)
     out = float(du.dose.iloc[0])
     return out
+
+
+def summarise_by_run_and_year(combined):
+    """Return dataframe with best dose and number of doses for which 
+    yld[i+1]>yld[i]
+
+    Parameters
+    ----------
+    combined : pd.DataFrame
+        From one of the parameter scans, columns:
+        - run
+        - year
+        - dose
+        - yld
+
+    Returns
+    -------
+    by_run_year : pd.DataFrame
+        columns:
+        - run
+        - year
+        - best_dose
+        - n_pos_diff (<=N_doses-1 if monotonic inc in dose, less if not)
+    """
+    yld_diffs = (
+        combined
+        .groupby(['run', 'year'])
+        .apply(monotonic_yld)
+        .reset_index()
+        .rename(columns={0: 'n_pos_diff'})
+    )
+
+    best_doses = (
+        combined
+        .groupby(['run', 'year'])
+        .apply(best_dose)
+        .reset_index()
+        .rename(columns={0: 'best_dose'})
+    )
+
+    by_run_year = (
+        best_doses.set_index(['run', 'year'])
+        .join(
+            yld_diffs.set_index(['run', 'year'])
+        )
+        .reset_index()
+    )
+
+    return by_run_year

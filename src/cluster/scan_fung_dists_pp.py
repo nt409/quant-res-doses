@@ -4,7 +4,7 @@ import pandas as pd
 
 from poly2.utils import best_dose, monotonic_yld
 
-N_ITS = 5
+N_ITS = 200
 N_K = 300
 N_L = 50
 
@@ -35,11 +35,9 @@ def combine():
     )
 
     by_run_year = (
-        best_doses
-        .set_index(['run', 'year'])
+        best_doses.set_index(['run', 'year'])
         .join(
-            yld_diffs
-            .set_index(['run', 'year'])
+            yld_diffs.set_index(['run', 'year'])
         )
         .reset_index()
     )

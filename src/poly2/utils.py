@@ -664,5 +664,5 @@ def monotonic_yld(df):
 
 def best_dose(df):
     du = df.sort_values('yld', ascending=False)
-    out = float(du.dose[0])
+    out = float(du.dose.iloc[0])
     return out

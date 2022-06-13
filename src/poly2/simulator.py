@@ -4,7 +4,8 @@ Various different types of simulator
 - SimulatorOneTrait
 - SimulatorBothTraits
 - SimulatorMixture
-- SimulatorSimple
+- SimulatorSimple (only fung trait, no host growth/density dependance/
+    mutation/fung decay)
 - SimulatorSimpleWithDD
 """
 

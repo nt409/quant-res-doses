@@ -155,3 +155,15 @@ find . -name "*.out" -type f -delete
 ```bash
 git clone https://github.com/nt409/polygenic2
 ```
+
+If git hangs after a line like:
+
+```bash
+Total 13 (delta 8), reused 0 (delta 0), pack-reused 0
+```
+
+then instead of `git push` try:
+
+```bash
+git push -u origin master
+```

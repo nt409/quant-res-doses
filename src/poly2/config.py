@@ -6,10 +6,13 @@ Two setups:
 - ConfigMixture (two fungicides)
 
 
-And a single function:
-print_str_repr
+And functions:
+- print_str_repr
+- remove_host_attrs_from_config
+- get_asymptote_config
 """
 
+import copy
 import numpy as np
 import pandas as pd
 
@@ -149,6 +152,7 @@ class Config:
         # STRATEGY
         self.sprays = sprays
 
+        # used in poly2.run
         self.fungicide_mixture = False
 
         self.n_k = n_k
@@ -198,22 +202,34 @@ class Config:
         # SCENARIO
 
         if type is None:
-            self.type = 'single'
+            type_ = 'single'
         else:
-            self.type = type
+            type_ = type
 
         # self.I0_single = DEFAULT_I0
         self.I0s = DEFAULT_I0 * np.ones(self.n_years)
 
-        if self.type == 'single':
+        if type_ == 'single':
             self.betas = DEFAULT_BETA * np.ones(self.n_years)
 
-        elif self.type == 'multi':
+        elif type_ == 'multi':
             self.beta_multi = ALL_BETAS
             self.n_iterations = n_iterations
 
         if verbose:
             print_string_repr(self)
+
+    #
+    #
+
+    def remove_host_attrs(self):
+        """Use if host is off and using:
+        -SimulatorAsymptote
+        -SimulatorSimple
+        -SimulatorSimpleWithDD
+        """
+        remove_host_attrs_from_config(self)
+
     #
     #
 
@@ -363,6 +379,7 @@ class ConfigMixture:
 
         self.host_on = [False]
 
+        # used in poly2.run
         self.fungicide_mixture = True
 
         #
@@ -392,16 +409,16 @@ class ConfigMixture:
         # SCENARIO
 
         if type is None:
-            self.type = 'single'
+            type_ = 'single'
         else:
-            self.type = type
+            type_ = type
 
         self.I0s = DEFAULT_I0 * np.ones(self.n_years)
 
-        if self.type == 'single':
+        if type_ == 'single':
             self.betas = DEFAULT_BETA * np.ones(self.n_years)
 
-        elif self.type == 'multi':
+        elif type_ == 'multi':
             self.beta_multi = ALL_BETAS
             self.n_iterations = n_iterations
 
@@ -444,3 +461,62 @@ def print_string_repr(obj):
         str_out += this_key + "\n"
 
     print(str_out)
+
+
+def remove_host_attrs_from_config(obj):
+    for key in [
+        'n_l',
+        'host_on',
+        'replace_cultivars',
+        'mutation_scale_host',
+        'l_mu',
+        'l_b',
+    ]:
+
+        delattr(obj, key)
+
+
+def get_asymptote_config(**kwargs):
+
+    if 'verbose' in kwargs:
+        be_verbose = kwargs['verbose']
+    else:
+        be_verbose = True
+
+    kwargs['verbose'] = False
+
+    kwargs_for_conf = copy.copy(kwargs)
+
+    # remove if present
+    kwargs_for_conf.pop('k_mu', None)
+    kwargs_for_conf.pop('k_b', None)
+    kwargs_for_conf.pop('curvature', None)
+
+    cf = Config(**kwargs_for_conf)
+    cf.remove_host_attrs()
+
+    if not (
+        'k_mu' in kwargs and
+        'k_b' in kwargs
+    ):
+        k_mu = 0.99
+        k_b = 0.5
+
+    else:
+        k_mu = kwargs['k_mu']
+        k_b = kwargs['k_b']
+
+    if 'curvature' in kwargs:
+        curv = kwargs['curvature']
+    else:
+        curv = 10
+
+    cf.k_mu = k_mu
+    cf.k_b = k_b
+
+    cf.curvature = curv
+
+    if be_verbose:
+        cf.print_repr()
+
+    return cf

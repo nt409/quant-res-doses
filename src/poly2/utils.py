@@ -281,12 +281,12 @@ def trait_vec(n):
     return vec
 
 
-def initial_host_dist(n, a, b):
-    return beta_dist(n, a, b)
+# def initial_host_dist(n, a, b):
+#     return beta_dist(n, a, b)
 
 
-def initial_fung_dist(n, a, b):
-    return gamma_dist(n, a, b)
+# def initial_fung_dist(n, a, b):
+#     return gamma_dist(n, a, b)
 
 
 def gamma_dist(n, a, b):
@@ -432,6 +432,85 @@ class Fungicide:
             # rel_inf_rate = exp(- curv*concentration)
 
             rel_inf_rate = 1 - w + w*exp(- curv*concentration)
+
+            return rel_inf_rate
+
+
+class FungicideAsymptote:
+    """Parameterised with type 1 partial resistance, i.e. curvature fixed and
+    asymptote depends on the value of k
+    """
+
+    def __init__(self, num_sprays, dose, curvature, decay_rate=None):
+        """init method
+
+        Fungicide for a single year
+
+        Needs decay_rate=None not =FUNG_DECAY_RATE, since input often 'None'
+        rather than not included
+
+        Parameters
+        ----------
+        num_sprays : int
+            number of sprays per year
+        dose : float
+            dose applied
+        curvature : float
+            curvature param (const)
+        decay_rate : float, optional
+            fungicide decay rate, default FUNG_DECAY_RATE if input was None
+        """
+
+        if decay_rate is None:
+            self.decay_rate = FUNG_DECAY_RATE
+        else:
+            self.decay_rate = decay_rate
+
+        self.dose = dose
+
+        self.curv = curvature
+
+        if num_sprays == 1:
+            self.sprays_list = [PARAMS.T_2]
+        elif num_sprays == 2:
+            self.sprays_list = [PARAMS.T_2, PARAMS.T_3]
+        elif num_sprays == 3:
+            self.sprays_list = [PARAMS.T_1, PARAMS.T_2, PARAMS.T_3]
+        else:
+            self.sprays_list = []
+
+    def effect(self, value_this_strain, t):
+        """Effect of fungicide at time t on a particular strain
+
+        Parameters
+        ----------
+        value_this_strain : float
+            Trait value between 0 and 1
+        t : float
+            time (between T_1=1456 and T_end=2515)
+
+        Returns
+        -------
+        rel_inf_rate
+            factor by which infection rate is reduced
+        """
+
+        # asymptote w
+        w = value_this_strain
+
+        concentration = 0
+
+        for T_spray in self.sprays_list:
+            if t > T_spray:
+                concentration += self.dose * exp(-self.decay_rate*(t-T_spray))
+
+        if concentration == 0:
+            return 1
+
+        else:
+            # rel_inf_rate = exp(- curv*concentration)
+
+            rel_inf_rate = 1 - w + w*exp(- self.curv*concentration)
 
             return rel_inf_rate
 

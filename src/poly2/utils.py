@@ -12,6 +12,7 @@ import pickle
 from math import exp, log, log10
 
 import numpy as np
+import pandas as pd
 
 from scipy.stats import beta, gamma, norm
 from scipy.optimize import minimize
@@ -794,3 +795,47 @@ def summarise_by_run_and_year(combined):
     )
 
     return by_run_year
+
+
+# for fitting
+def score_for_this_df(df, control):
+    """Get score for control model output relative to control data
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Columns:
+        - year
+        - data_control
+
+    control : np.array
+        array of model output (control) from first year to Nth
+
+    Returns
+    -------
+    score : float
+        model score - sum of squared residuals - to minimise
+    """
+
+    model_df = (
+        pd.DataFrame(dict(model_control=control))
+        .assign(year=np.arange(df.year.min(), df.year.max()+1))
+    )
+
+    results = (
+
+        df.set_index('year')
+
+        .join(model_df.set_index('year'))
+
+        .assign(
+            residuals=lambda x: (
+                (x.model_control - x.data_control)**2
+            ),
+
+        )
+    )
+
+    score = results.residuals.sum()
+
+    return score

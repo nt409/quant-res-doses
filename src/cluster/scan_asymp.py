@@ -1,6 +1,5 @@
 """Fung scan over initial distributions"""
 
-import copy
 import sys
 
 import numpy as np

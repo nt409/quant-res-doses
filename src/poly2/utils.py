@@ -839,3 +839,47 @@ def score_for_this_df(df, control):
     score = results.residuals.sum()
 
     return score
+
+
+def get_b(mu, desired_variance, nk=300):
+    """Given mu and desired value for var, get b for gamma dist
+
+    Then init_dist = gamma_dist(nk, mu*b, b)
+
+    NB with normal params, (b = 0.8431572316700577, mu = 9.44286788381916), get
+    that get_dist_var() = 0.00625801.
+
+    Parameters
+    ----------
+    mu : float
+        -- 
+    desired_variance : float
+        -- 
+    nk : int, optional
+
+    Returns
+    -------
+    b_out : float
+        value of b which will give desired variance in combination with mu
+    """
+    opt_out = minimize(
+        b_objective,
+        [0.2],
+        tol=1e-10,
+        args=(mu, desired_variance, nk)
+    )
+
+    b_out = opt_out.x[0]
+
+    return b_out
+
+
+def b_objective(b, mu, x, nk=300):
+
+    rs = gamma_dist(nk, mu*b, b).reshape((nk, 1))
+
+    tv = trait_vec(nk)
+
+    out = (get_dist_var(rs, tv) - x)**2
+
+    return out

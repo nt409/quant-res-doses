@@ -6,13 +6,14 @@ from poly2.utils import summarise_by_run_and_year
 
 N_ITS = 200
 N_K = 300
-N_L = 50
+N_YEARS = 20
+N_ITS = 25
 
 
 def combine():
 
     combined = pd.concat([
-        pd.read_csv(f'../outputs/scan_all_{ii}_{N_K}_{N_L}.csv')
+        pd.read_csv(f'../outputs/scan_all_{ii}_{N_K}_{N_YEARS}_{N_ITS}.csv')
         for ii in range(N_ITS)
     ])
 

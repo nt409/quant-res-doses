@@ -1,5 +1,6 @@
 """Fung scan over initial distributions"""
 
+import copy
 import sys
 
 import numpy as np
@@ -34,9 +35,11 @@ def main(
         b = np.random.uniform(1e-2, 30)
         curv = np.random.uniform(1e-2, 30)
 
-        cf.mu = mu
-        cf.b = b
-        cf.curv = curv
+        cf.k_mu = mu
+        cf.k_b = b
+        cf.curvature = curv
+
+        print(ii, cf.k_mu)
 
         for dose in np.linspace(0.1, 1, 10):
 

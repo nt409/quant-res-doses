@@ -1,7 +1,6 @@
 """
 Fung scan over 'everything' - fung dist, asymptote, decay rate, mutation scale
 and proportion.
-
 """
 
 import sys

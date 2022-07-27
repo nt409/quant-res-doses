@@ -750,12 +750,12 @@ def best_dose(df):
 
 def summarise_by_run_and_year(combined):
     """Return dataframe with best dose and number of doses for which 
-    yld[i+1]>yld[i]
+    yld[dose_{i+1}]>yld[dose_{i+1}]
 
     Parameters
     ----------
     combined : pd.DataFrame
-        From one of the parameter scans, columns:
+        df from one of the parameter scans, columns:
         - run
         - year
         - dose
@@ -764,7 +764,7 @@ def summarise_by_run_and_year(combined):
     Returns
     -------
     by_run_year : pd.DataFrame
-        columns:
+        df with columns:
         - run
         - year
         - best_dose

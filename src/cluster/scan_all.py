@@ -43,7 +43,6 @@ def main(
             cf,
             mu,
             b,
-            init_dist,
             asymptote,
             d_rate_multiplier,
             m_prop_multiplier,
@@ -60,8 +59,6 @@ def main(
             cf.doses = dose*np.ones(cf.n_years)
 
             sim = SimulatorOneTrait(cf)
-
-            sim.initial_k_dist = init_dist
 
             data = sim.run_model()
 
@@ -164,7 +161,6 @@ def get_run_params(cf):
         cf,
         mu,
         b,
-        init_dist,
         asymptote,
         d_rate_multiplier,
         m_prop_multiplier,

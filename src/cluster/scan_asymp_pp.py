@@ -14,7 +14,7 @@ def combine():
 
     combined = pd.concat([
         pd.read_csv(
-            f'../outputs/scan_all_{ii}_{N_K}_{N_YEARS}_{N_RUNS_PER_IT}.csv')
+            f'../outputs/scan_asymp_{ii}_{N_K}_{N_YEARS}_{N_RUNS_PER_IT}.csv')
         for ii in range(N_ITS)
     ])
 
@@ -26,7 +26,6 @@ def combine():
         combined
         .groupby('run').mean()
         .drop(['year', 'yld', 'dose'], axis=1)
-        # .filter(regex='^(?!in_).*$')
     )
 
     print(run_info.columns)
@@ -41,7 +40,7 @@ def combine():
 
     print(out.shape)
 
-    fn = '../outputs/combined/scan_all.csv'
+    fn = '../outputs/combined/scan_asymp.csv'
     print(f'saving to {fn}')
     out.to_csv(fn, index=False)
 

@@ -48,14 +48,13 @@ def main(
             cf,
             mu,
             b,
-            init_dist,
-            asymptote,
+            curv,
             d_rate_multiplier,
             m_prop_multiplier,
             m_scale_multiplier,
             ME_mean,
             ME_var,
-            curv_summary_dict,
+            asymp_dist_summary_dict,
         ) = get_run_params_asymp(cf)
 
         # * now run the simulation for N doses
@@ -64,9 +63,7 @@ def main(
 
             cf.doses = dose*np.ones(cf.n_years)
 
-            sim = SimulatorOneTrait(cf)
-
-            sim.initial_k_dist = init_dist
+            sim = SimulatorAsymptote(cf)
 
             data = sim.run_model()
 
@@ -78,7 +75,7 @@ def main(
             )
 
             df2 = pd.DataFrame(
-                curv_summary_dict,
+                asymp_dist_summary_dict,
                 index=np.arange(df1.shape[0])
             )
 
@@ -90,7 +87,7 @@ def main(
                     run=run*n_its + ii,
                     mu=mu,
                     b=b,
-                    asymptote=asymptote,
+                    curv=curv,
                     dec_rate_multiplier=d_rate_multiplier,
                     m_prop_multiplier=m_prop_multiplier,
                     m_scale_multiplier=m_scale_multiplier,
@@ -104,7 +101,7 @@ def main(
     out = out.reset_index(drop=True)
 
     conf_str = f'{run}_{cf.n_k}_{n_years}_{n_its}'
-    out.to_csv(f'../outputs/scan_all_{conf_str}.csv', index=False)
+    out.to_csv(f'../outputs/scan_asymp_{conf_str}.csv', index=False)
 
     return None
 
@@ -123,6 +120,9 @@ def get_run_params_asymp(cf):
 
     d_rate_multiplier = np.random.uniform(1/3, 3)
     curv = np.random.uniform(1e-2, 30)
+
+    cf.k_mu = mu
+    cf.k_b = b
 
     cf.curvature = curv
     cf.decay_rate = FUNG_DECAY_RATE * d_rate_multiplier
@@ -151,7 +151,7 @@ def get_run_params_asymp(cf):
     # * now get info on density in 0-0.1, 0.1-0.2, ... 0.9-1
     ev = edge_values(10)
 
-    dist_summary = gamma_dist(10, a, b)
+    dist_summary = beta_dist(10, a, b)
 
     dist_summary_keys = [(
         f'in_{ev[ii]:.1f}_{ev[ii+1]:.1f}'.replace('.', 'p')
@@ -159,7 +159,7 @@ def get_run_params_asymp(cf):
         for ii in range(len(ev)-1)
     ]
 
-    curv_dist_summary_dict = {
+    asymp_dist_summary_dict = {
         dist_summary_keys[ii]: dist_summary[ii] for ii in range(10)
     }
 
@@ -167,14 +167,13 @@ def get_run_params_asymp(cf):
         cf,
         mu,
         b,
-        init_dist,
-        asymptote,
+        curv,
         d_rate_multiplier,
         m_prop_multiplier,
         m_scale_multiplier,
         max_effect_mean,
         max_effect_var,
-        curv_dist_summary_dict,
+        asymp_dist_summary_dict,
     )
 
 

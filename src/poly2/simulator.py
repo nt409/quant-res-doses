@@ -133,6 +133,7 @@ class SimulatorOneTrait:
             - dis_sev: np.array, shape (n_years, )
             - yield_vec: np.array, shape (n_years, )
             - econ: np.array, shape (n_years, )
+            - years: np.array, shape (n_years, )
         """
 
         replace_cultivar_array = self.conf_o.replace_cultivars
@@ -205,7 +206,8 @@ class SimulatorOneTrait:
             'total_I': total_I,
             'dis_sev': dis_sev,
             'yield_vec': yield_vec,
-            'econ': econ
+            'econ': econ,
+            'year': np.arange(1, 1 + len(yield_vec))
         }
 
     def calculate_ode_soln(self, D0_k, D0_l, I0_in, beta_in, num_sprays, dose):
@@ -445,6 +447,7 @@ class SimulatorBothTraits:
             - dis_sev: np.array, shape (n_years, )
             - yield_vec: np.array, shape (n_years, )
             - econ: np.array, shape (n_years, )
+            - years: np.array, shape (n_years, )
         """
 
         replace_cultivar_array = self.conf_b.replace_cultivars
@@ -521,7 +524,8 @@ class SimulatorBothTraits:
             'total_I': total_I,
             'dis_sev': dis_sev,
             'yield_vec': yield_vec,
-            'econ': econ
+            'econ': econ,
+            'year': np.arange(1, 1 + len(yield_vec))
         }
 
     def calculate_ode_soln(self, D0_k, D0_l, I0_in, beta_in, num_sprays, dose):
@@ -762,6 +766,7 @@ class SimulatorMixture:
             - dis_sev: np.array, shape (n_years, )
             - yield_vec: np.array, shape (n_years, )
             - econ: np.array, shape (n_years, )
+            - years: np.array, shape (n_years, )
         """
 
         fung_dists_A = np.zeros((self.n_k, self.n_years+1))
@@ -837,7 +842,8 @@ class SimulatorMixture:
             'total_I': total_I,
             'dis_sev': dis_sev,
             'yield_vec': yield_vec,
-            'econ': econ
+            'econ': econ,
+            'year': np.arange(1, 1 + len(yield_vec))
         }
 
     def calculate_ode_soln(
@@ -1088,6 +1094,7 @@ class SimulatorSimple:
             - dis_sev: np.array, shape (n_years, )
             - yield_vec: np.array, shape (n_years, )
             - econ: np.array, shape (n_years, )
+            - years: np.array, shape (n_years, )
         """
 
         fung_dists = np.zeros((self.n_k, self.n_years+1))
@@ -1140,7 +1147,8 @@ class SimulatorSimple:
             'total_I': total_I,
             'dis_sev': dis_sev,
             'yield_vec': yield_vec,
-            'econ': econ
+            'econ': econ,
+            'year': np.arange(1, 1 + len(yield_vec))
         }
 
     def calculate_ode_soln(self, D0_k, I0_in, beta_in, num_sprays, dose):
@@ -1302,6 +1310,7 @@ class SimulatorSimpleWithDD:
             - dis_sev: np.array, shape (n_years, )
             - yield_vec: np.array, shape (n_years, )
             - econ: np.array, shape (n_years, )
+            - years: np.array, shape (n_years, )
         """
 
         fung_dists = np.zeros((self.n_k, self.n_years+1))
@@ -1354,7 +1363,8 @@ class SimulatorSimpleWithDD:
             'total_I': total_I,
             'dis_sev': dis_sev,
             'yield_vec': yield_vec,
-            'econ': econ
+            'econ': econ,
+            'year': np.arange(1, 1 + len(yield_vec))
         }
 
     def calculate_ode_soln(self, D0_k, I0_in, beta_in, num_sprays, dose):
@@ -1518,6 +1528,7 @@ class SimulatorAsymptote:
             - dis_sev: np.array, shape (n_years, )
             - yield_vec: np.array, shape (n_years, )
             - econ: np.array, shape (n_years, )
+            - years: np.array, shape (n_years, )
         """
 
         fung_dists = np.zeros((self.n_k, self.n_years+1))
@@ -1575,7 +1586,8 @@ class SimulatorAsymptote:
             'total_I': total_I,
             'dis_sev': dis_sev,
             'yield_vec': yield_vec,
-            'econ': econ
+            'econ': econ,
+            'year': np.arange(1, 1 + len(yield_vec))
         }
 
     def calculate_ode_soln(self, D0_k, I0_in, beta_in, num_sprays, dose):

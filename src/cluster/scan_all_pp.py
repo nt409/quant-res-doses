@@ -25,15 +25,12 @@ def combine():
     run_info = (
         combined
         .groupby('run').mean()
-        .loc[:, [
-            'mu',
-            'b',
-            'asymptote',
-            'dec_rate_multiplier',
-            'm_prop_multiplier',
-            'm_scale_multiplier',
-        ]]
+        .drop(['year', 'yld'], axis=1)
+        .filter(regex='^(?!in_).*$')
     )
+
+    print(run_info.columns)
+    print(by_run_year.columns)
 
     out = (
         by_run_year

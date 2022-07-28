@@ -3,6 +3,7 @@ Fung scan over 'everything' - fung dist, asymptote, decay rate, mutation scale
 and proportion.
 """
 
+from math import exp
 import sys
 
 import numpy as np
@@ -10,15 +11,16 @@ import pandas as pd
 from scipy.stats import loguniform
 
 from poly2.utils import (
+    beta_dist,
     edge_values,
     gamma_dist,
     get_dist_mean,
     get_dist_var,
     trait_vec
 )
-from poly2.config import Config
+from poly2.config import get_asymptote_config
 from poly2.consts import FUNG_DECAY_RATE, MUTATION_PROP, MUTATION_SCALE
-from poly2.simulator import SimulatorOneTrait
+from poly2.simulator import SimulatorAsymptote
 
 
 def main(
@@ -27,10 +29,13 @@ def main(
     n_its
 ):
 
-    cf = Config(
-        n_years=n_years,
-        n_k=300,
+    cf = get_asymptote_config(
         verbose=False
+        n_k=300,
+        n_years=n_years,
+        k_mu=None,
+        k_b=None,
+        curvature=None,
     )
 
     np.random.seed(run)
@@ -51,7 +56,7 @@ def main(
             ME_mean,
             ME_var,
             curv_summary_dict,
-        ) = get_run_params(cf)
+        ) = get_run_params_asymp(cf)
 
         # * now run the simulation for N doses
 
@@ -104,22 +109,22 @@ def main(
     return None
 
 
-def get_run_params(cf):
+def get_run_params_asymp(cf):
+
+    mu = np.random.uniform(1e-2, 1)
+    b = np.random.uniform(1e-2, 30)
+
+    a = (b*mu)/(1-mu)
+
+    init_dist = beta_dist(cf.n_k, a, b)
 
     #
     # * sample fung params
 
-    b = np.random.uniform(0, 5)
-    mu = np.random.uniform(0, 25)
-    a = mu*b
-    init_dist = gamma_dist(cf.n_k, a, b)
-
-    asymptote = np.random.uniform(0, 1)
     d_rate_multiplier = np.random.uniform(1/3, 3)
+    curv = np.random.uniform(1e-2, 30)
 
-    cf.k_mu = mu
-    cf.k_b = b
-    cf.asymptote = asymptote
+    cf.curvature = curv
     cf.decay_rate = FUNG_DECAY_RATE * d_rate_multiplier
 
     #
@@ -131,7 +136,6 @@ def get_run_params(cf):
     cf.mutation_proportion = MUTATION_PROP * m_prop_multiplier
     cf.mutation_scale_fung = MUTATION_SCALE * m_scale_multiplier
 
-    #
     # * in trait space, get mean and variance
 
     tv = trait_vec(cf.n_k)
@@ -140,10 +144,9 @@ def get_run_params(cf):
     tv_var = get_dist_var(reshaped, tv)[0]
     tv_mean = get_dist_mean(reshaped, tv)[0]
 
-    # NB max_effect = 1 - w + w * exp(-curv)
-    #               = 1 - w + w * k
-    max_effect_mean = 1 - asymptote + asymptote * tv_mean
-    max_effect_var = (asymptote**2) * tv_var
+    # max_effect = 1 + w * (exp(-curv) - 1)
+    max_effect_mean = 1 + tv_mean * (exp(-curv) - 1)
+    max_effect_var = ((exp(-curv) - 1)**2) * tv_var
 
     # * now get info on density in 0-0.1, 0.1-0.2, ... 0.9-1
     ev = edge_values(10)

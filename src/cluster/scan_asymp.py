@@ -30,7 +30,7 @@ def main(
 ):
 
     cf = get_asymptote_config(
-        verbose=False
+        verbose=False,
         n_k=300,
         n_years=n_years,
         k_mu=None,

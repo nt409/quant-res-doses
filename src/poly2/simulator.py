@@ -83,6 +83,7 @@ class SimulatorOneTrait:
 
         self.conf_o = config
         self.mutation_array = None
+        self.y0 = None
 
         self.k_a, self.k_b = get_fung_dist_params_from_config(self.conf_o)
         self.l_a, self.l_b = get_host_dist_params_from_config(self.conf_o)
@@ -411,6 +412,8 @@ class SimulatorBothTraits:
         self.fung_kernel = None
         self.host_kernel = None
 
+        self.y0 = None
+
         self.initial_k_dist = gamma_dist(self.n_k, self.k_a, self.k_b)
         self.initial_l_dist = beta_dist(self.n_l, self.l_a, self.l_b)
 
@@ -724,6 +727,8 @@ class SimulatorMixture:
         self.n_k = self.conf_m.n_k
 
         self.n_years = self.conf_m.n_years
+
+        self.y0 = None
 
         self.k_vec = trait_vec(self.n_k)
 
@@ -1057,6 +1062,8 @@ class SimulatorSimple:
 
         self.n_k = self.conf_s.n_k
 
+        self.y0 = None
+
         self.n_years = self.conf_s.n_years
 
         self.k_vec = trait_vec(self.n_k)
@@ -1273,6 +1280,8 @@ class SimulatorSimpleWithDD:
 
         self.n_k = self.conf_d.n_k
 
+        self.y0 = None
+
         self.n_years = self.conf_d.n_years
 
         self.k_vec = trait_vec(self.n_k)
@@ -1483,6 +1492,7 @@ class SimulatorAsymptote:
 
         self.conf_a = config
         self.mutation_array = None
+        self.y0 = None
 
         kmu = config.k_mu
 

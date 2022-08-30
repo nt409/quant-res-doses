@@ -13,6 +13,8 @@ dist/
 # notebooks/*
 # *.ipynb
 
+notebooks/old
+
 *.xlsx
 *.json
 

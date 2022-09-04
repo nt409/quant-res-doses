@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-N_ITS = 26
+N_ITS = 100
 
 
 def combine():

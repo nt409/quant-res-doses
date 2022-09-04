@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-N_ITS = 100
+N_ITS = 99
 
 
 def combine():

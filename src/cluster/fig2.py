@@ -52,7 +52,7 @@ def main(ii):
 
     out = out.reset_index(drop=True)
 
-    out.to_csv(f'../outputs/f1/run_{ii}.csv', index=False)
+    out.to_csv(f'../outputs/f2/run_{ii}.csv', index=False)
 
     return None
 

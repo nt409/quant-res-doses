@@ -26,7 +26,7 @@ def main(ii):
     sim = SimulatorOneTrait(cf)
     k_vec = sim.k_vec
 
-    indices = list(np.arange(0, 100, 26)) + [-1]
+    indices = np.arange(0, 100, 1)
 
     for jj in tqdm(indices):
 
@@ -58,6 +58,7 @@ def main(ii):
 
 
 def get_mono_data(cf, init_dist):
+
     doses = np.arange(0.1, 1.1, 0.1)
 
     df = pd.DataFrame()

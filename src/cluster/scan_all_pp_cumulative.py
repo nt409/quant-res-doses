@@ -1,8 +1,8 @@
-"""For Fung distribution scan"""
+"""For Fung distribution scan, cumulative yield"""
 
 import pandas as pd
 
-from poly2.utils import summarise_by_run_and_year
+from poly2.utils import summarise_by_run_and_year_cumulative
 
 N_RUNS_PER_IT = 100
 N_K = 300
@@ -20,16 +20,19 @@ def combine():
 
     print(combined.shape)
 
-    by_run_year = summarise_by_run_and_year(combined)
+    by_run_year = summarise_by_run_and_year_cumulative(combined)
+
+    print(by_run_year.head())
+    print(by_run_year.shape)
 
     run_info = (
         combined
-        .groupby('run').mean()
+        .groupby('run').first()
         .drop(['year', 'yld', 'dose'], axis=1)
         .filter(regex='^(?!(in_)).*$')
     )
 
-    print(run_info.columns)
+    print(run_info.head())
     print(run_info.shape)
 
     out = (
@@ -39,9 +42,10 @@ def combine():
         .reset_index()
     )
 
+    print(out.head())
     print(out.shape)
 
-    fn = '../outputs/combined/scan_all.csv'
+    fn = '../outputs/combined/scan_all_cumyld.csv'
     print(f'saving to {fn}')
     out.to_csv(fn, index=False)
 

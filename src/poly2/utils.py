@@ -803,7 +803,55 @@ def summarise_by_run_and_year(combined):
     return by_run_year
 
 
+def summarise_by_run_and_year_cumulative(combined):
+    """Return dataframe with best dose according to cumulative yield
+
+    Parameters
+    ----------
+    combined : pd.DataFrame
+        df from one of the parameter scans, columns:
+        - run
+        - year
+        - dose
+        - yld
+
+    Returns
+    -------
+    by_run_year : pd.DataFrame
+        df with columns:
+        - run
+        - year
+        - best_dose
+    """
+
+    cum_yld_df = (
+        combined
+        .groupby(['run', 'dose'])
+        .apply(lambda df:
+               pd.DataFrame(dict(
+                   run=df.run,
+                   dose=df.dose,
+                   yld=df.yld,
+                   cum_yld=np.cumsum(df.yld),
+               ))
+               )
+    )
+
+    print(cum_yld_df.shape)
+
+    out = (
+        cum_yld_df
+        .groupby('run')
+        .apply(lambda df: df.loc[df.cum_yld.idxmax()])
+    )
+
+    print(out.shape)
+
+    return out
+
 # for fitting
+
+
 def score_for_this_df(df, control):
     """Get score for control model output relative to control data
 

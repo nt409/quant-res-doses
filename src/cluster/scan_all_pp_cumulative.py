@@ -7,7 +7,8 @@ from poly2.utils import summarise_by_run_and_year_cumulative
 N_RUNS_PER_IT = 100
 N_K = 300
 N_YEARS = 35
-N_ITS = 100
+# N_ITS = 100
+N_ITS = 5
 
 
 def combine():
@@ -27,9 +28,10 @@ def combine():
 
     run_info = (
         combined
-        .groupby('run').first()
         .drop(['year', 'yld', 'dose'], axis=1)
         .filter(regex='^(?!(in_)).*$')
+        .groupby('run')
+        .first()
     )
 
     print(run_info.head())

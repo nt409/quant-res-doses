@@ -830,6 +830,7 @@ def summarise_by_run_and_year_cumulative(combined):
         .apply(lambda df:
                pd.DataFrame(dict(
                    run=df.run,
+                   year=df.year,
                    dose=df.dose,
                    yld=df.yld,
                    cum_yld=np.cumsum(df.yld),
@@ -841,7 +842,7 @@ def summarise_by_run_and_year_cumulative(combined):
 
     out = (
         cum_yld_df
-        .groupby('run')
+        .groupby(['run', 'year'])
         .apply(lambda df: df.loc[df.cum_yld.idxmax()])
     )
 

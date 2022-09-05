@@ -7,8 +7,8 @@ from poly2.utils import summarise_by_run_and_year_cumulative
 N_RUNS_PER_IT = 100
 N_K = 300
 N_YEARS = 35
-# N_ITS = 100
-N_ITS = 5
+N_ITS = 100
+# N_ITS = 5
 
 
 def combine():
@@ -23,8 +23,8 @@ def combine():
 
     by_run_year = summarise_by_run_and_year_cumulative(combined)
 
-    print(by_run_year.head())
-    print(by_run_year.shape)
+    # print(by_run_year.head())
+    # print(by_run_year.shape)
 
     run_info = (
         combined
@@ -34,8 +34,8 @@ def combine():
         .first()
     )
 
-    print(run_info.head())
-    print(run_info.shape)
+    # print(run_info.head())
+    # print(run_info.shape)
 
     out = (
         by_run_year
@@ -44,7 +44,7 @@ def combine():
         .reset_index()
     )
 
-    print(out.head(20))
+    # print(out.head(20))
     print(out.shape)
 
     fn = '../outputs/combined/scan_all_cumyld.csv'

@@ -844,6 +844,7 @@ def summarise_by_run_and_year_cumulative(combined):
         cum_yld_df
         .groupby(['run', 'year'])
         .apply(lambda df: df.loc[df.cum_yld.idxmax()])
+        .reset_index(drop=True)
     )
 
     print(out.shape)

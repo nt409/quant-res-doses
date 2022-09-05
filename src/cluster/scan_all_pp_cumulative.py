@@ -28,7 +28,7 @@ def combine():
 
     run_info = (
         combined
-        .drop(['year', 'yld', 'dose'], axis=1)
+        .drop(['year', 'yld', 'dose', 'ME_var'], axis=1)
         .filter(regex='^(?!(in_)).*$')
         .groupby('run')
         .first()
@@ -44,7 +44,7 @@ def combine():
         .reset_index()
     )
 
-    print(out.head())
+    print(out.head(20))
     print(out.shape)
 
     fn = '../outputs/combined/scan_all_cumyld.csv'

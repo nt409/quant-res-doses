@@ -34,6 +34,7 @@ def combine():
         .groupby(['s', 'r', 'year'])
         .apply(lambda x: x.loc[x.cumyld.idxmax()])
         .reset_index(drop=True)
+        .rename(columns={'dose': 'best_dose'})
     )
 
     print(out.head(20))

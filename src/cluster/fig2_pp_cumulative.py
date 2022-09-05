@@ -32,7 +32,7 @@ def combine():
             )
         ))
         .groupby(['s', 'r', 'year'])
-        .apply(lambda x: x.loc[x.yld.idxmax()])
+        .apply(lambda x: x.loc[x.cumyld.idxmax()])
         .reset_index(drop=True)
     )
 

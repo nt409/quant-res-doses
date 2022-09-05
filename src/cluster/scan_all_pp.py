@@ -26,11 +26,12 @@ def combine():
         combined
         .groupby('run').mean()
         .drop(['year', 'yld', 'dose'], axis=1)
-        # .filter(regex='^(?!in_).*$')
+        .filter(regex='^(?!(in_)).*$')
     )
 
     print(run_info.columns)
     print(by_run_year.columns)
+    print(run_info.shape)
 
     out = (
         by_run_year

@@ -42,7 +42,7 @@ def inverse_logit10(x):
     return 10**(x) / (1 + 10**(x))
 
 
-def object_dump(file_name, object_to_dump):
+def object_dump(object_to_dump, file_name):
     """save object to pickle file"""
 
     # check if file path exists - if not create
@@ -55,6 +55,12 @@ def object_dump(file_name, object_to_dump):
         pickle.dump(object_to_dump, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return None
+
+
+def object_load(filename):
+    with open(filename, "rb") as f:
+        out = pickle.load(f)
+    return out
 
 
 def find_beta_vectorised(final_sevs, I0):

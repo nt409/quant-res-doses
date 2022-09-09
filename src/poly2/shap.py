@@ -1,6 +1,9 @@
-from xgboost import XGBRegressor
+
+
 import shap
 from joblib import Memory
+
+from xgboost import XGBRegressor
 
 
 memory = Memory('../joblib_cache/', verbose=1)
@@ -11,20 +14,16 @@ memory = Memory('../joblib_cache/', verbose=1)
 
 
 @memory.cache
-def get_shap_values(X):
-
-    print('start')
+def get_shap_values(X, y, filename):
 
     model = XGBRegressor()
 
-    model.load_model('xgb_scan_all.json')
+    model.load_model(filename)
+
+    model.fit(X, y)
 
     explainer = shap.TreeExplainer(model)
 
     shap_values = explainer(X)
-
-    print('done')
-
-    # shap_values = []
 
     return shap_values

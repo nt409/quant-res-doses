@@ -308,9 +308,9 @@ def gamma_dist(n, a, b):
     n : _type_
         _description_
     a : float
-        alpha, from shape/rate parameterisation
+        alpha = shape param, from shape/rate parameterisation
     b : float
-        beta, from shape/rate parameterisation on wiki
+        beta = rate param, from shape/rate parameterisation on wiki
     """
     edge_vals = edge_values(n)
 
@@ -329,6 +329,21 @@ def gamma_dist(n, a, b):
 
 
 def beta_dist(n, a, b):
+    """Beta distribution
+
+    See
+    - en.wikipedia.org/wiki/Beta_distribution
+    - docs.scipy.org/doc/scipy/reference/generated/scipy.stats.beta.html
+
+    Parameters
+    ----------
+    n : _type_
+        _description_
+    a : float
+        alpha, from parameterisation
+    b : float
+        beta, from parameterisation
+    """
     edge_vals = edge_values(n)
 
     dist = [

@@ -13,7 +13,7 @@ from scipy.stats import loguniform
 from poly2.utils import (
     beta_dist,
     edge_values,
-    gamma_dist,
+    # gamma_dist,
     get_dist_mean,
     get_dist_var,
     trait_vec

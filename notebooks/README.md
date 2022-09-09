@@ -2,21 +2,11 @@
 
 ## XGB Model creation:
 
-Prefix `01*_*.ipynb`:
-
-- `010_hyperparam_opt.ipynb`
-- `011_hyperparam_opt_Y10.ipynb`
-- `013_hyperparam_opt_cumulative.ipynb`
-- `012_hyperparam_opt_asymp.ipynb`
+See `poly2.xgb_optimiser`.
 
 ## SHAP Value Calculation:
 
-Prefix `02*_*.ipynb`:
-
-- `020_SHAP_all.ipynb`
-- `011_SHAP_Y10.ipynb`
-- `012_SHAP_cumulative.ipynb`
-- `013_SHAP_asymp.ipynb`
+See `poly2.shap`.
 
 ## Figures:
 

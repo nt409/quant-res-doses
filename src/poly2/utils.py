@@ -954,3 +954,21 @@ def b_objective(b, mu, x, nk=300):
     out = (get_dist_var(rs, tv) - x)**2
 
     return out
+
+
+def load_data(model):
+    if model == 'Y10':
+        df = (
+            pd.read_csv('../outputs/combined/processed_scan_all.csv')
+            .loc[lambda x: x.year == 10]
+            .reset_index(drop=True)
+        )
+        X = df.drop(['year', 'best_dose'], axis=1)
+
+    else:
+        df = pd.read_csv(f'../outputs/combined/processed_scan_{model}.csv')
+        X = df.drop(['best_dose'], axis=1)
+
+    y = df.loc[:, ['run', 'best_dose']]
+
+    return X, y

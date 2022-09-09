@@ -48,7 +48,7 @@ def main(
             m_prop_multiplier,
             m_scale_multiplier,
             ME_mean,
-            ME_var,
+            # ME_var,
             curv_summary_dict,
         ) = get_run_params(cf)
 
@@ -86,7 +86,7 @@ def main(
                     dec_rate_multiplier=d_rate_multiplier,
                     m_prop_multiplier=m_prop_multiplier,
                     m_scale_multiplier=m_scale_multiplier,
-                    ME_var=ME_var,
+                    # ME_var=ME_var,
                     ME_mean=ME_mean,
                 )
             )
@@ -109,7 +109,7 @@ def get_run_params(cf):
     b = np.random.uniform(0, 5)
     mu = np.random.uniform(0, 25)
     a = mu*b
-    init_dist = gamma_dist(cf.n_k, a, b)
+    # init_dist = gamma_dist(cf.n_k, a, b)
 
     asymptote = np.random.uniform(0, 1)
     d_rate_multiplier = np.random.uniform(1/3, 3)
@@ -131,16 +131,17 @@ def get_run_params(cf):
     #
     # * in trait space, get mean and variance
 
-    tv = trait_vec(cf.n_k)
+    # tv = trait_vec(cf.n_k)
     # NB get_dist_var/mean needs init_dist to be shape (n_k, n_years)
-    reshaped = init_dist.reshape((cf.n_k, 1))
-    tv_var = get_dist_var(reshaped, tv)[0]
-    tv_mean = get_dist_mean(reshaped, tv)[0]
+    # reshaped = init_dist.reshape((cf.n_k, 1))
+    # tv_var = get_dist_var(reshaped, tv)[0]
+    # tv_mean = get_dist_mean(reshaped, tv)[0]
 
     # NB max_effect = 1 - w + w * exp(-curv)
     #               = 1 - w + w * k
-    max_effect_mean = 1 - asymptote + asymptote * tv_mean
-    max_effect_var = (asymptote**2) * tv_var
+    k_mean = (b/(b+1))**a
+    max_effect_mean = 1 - asymptote + asymptote * k_mean
+    # max_effect_var = (asymptote**2) * tv_var
 
     # * now get info on density in 0-0.1, 0.1-0.2, ... 0.9-1
     ev = edge_values(10)
@@ -166,7 +167,7 @@ def get_run_params(cf):
         m_prop_multiplier,
         m_scale_multiplier,
         max_effect_mean,
-        max_effect_var,
+        # max_effect_var,
         curv_dist_summary_dict,
     )
 

@@ -972,3 +972,15 @@ def load_data(model):
     y = df.loc[:, ['run', 'best_dose']]
 
     return X, y
+
+
+def load_train_test_data(model):
+    X, y = load_data(model)
+
+    X_cv = X.loc[lambda x: (x.run < 8000)].drop('run', axis=1)
+    y_cv = y.loc[lambda x: (x.run < 8000)].drop('run', axis=1)
+
+    X_test = X.loc[lambda x: (x.run >= 8000)].drop('run', axis=1)
+    y_test = np.array(y.loc[lambda x: (x.run >= 8000)].drop('run', axis=1))
+
+    return X_cv, y_cv, X_test, y_test

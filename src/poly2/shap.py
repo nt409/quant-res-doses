@@ -36,6 +36,6 @@ if __name__ == "__main__":
 
     X, y = load_data(MODEL)
 
-    shap_values = get_shap_values(X, y, f'xgb_{MODEL}.json')
+    shap_values = get_shap_values(X, y, f'../outputs/xgb/{MODEL}.json')
 
-    object_dump(shap_values, f'./SHAP_{MODEL}.pickle')
+    object_dump(shap_values, f'../outputs/SHAP/{MODEL}.pickle')

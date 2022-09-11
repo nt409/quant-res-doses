@@ -121,7 +121,7 @@ if __name__ == "__main__":
     # MODEL = 'asymp'
 
     if len(sys.argv) != 3:
-        raise Exception("Supply one argument: the model name")
+        raise Exception("Supply two arguments: the model name and the seed")
 
     MODEL = sys.argv[1]
     SEED = int(sys.argv[2])

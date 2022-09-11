@@ -1,5 +1,6 @@
 """Combine hyperoptimisations"""
 
+import sys
 import pandas as pd
 
 N_ITS = 50
@@ -23,6 +24,12 @@ def combine(model, folder):
 
 
 if __name__ == "__main__":
-    MODEL = 'all'
+    # MODEL = 'all'
+
+    if len(sys.argv) != 2:
+        raise Exception("Supply one argument: the model name")
+
+    MODEL = sys.argv[1]
+
     combine(MODEL, 'scores')
     combine(MODEL, 'hyperparams')

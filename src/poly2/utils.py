@@ -14,10 +14,16 @@ from math import exp, log, log10
 import numpy as np
 import pandas as pd
 
-from scipy.stats import beta, gamma, norm
-from scipy.optimize import minimize
-from scipy.integrate import ode
 from scipy import signal
+from scipy.integrate import ode
+from scipy.optimize import minimize
+from scipy.stats import beta, gamma, norm
+
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import KFold
+
+from tqdm import tqdm
+from xgboost import XGBRegressor
 
 from poly2.consts import DEFAULT_I0, FUNG_DECAY_RATE
 from poly2.params import PARAMS
@@ -956,7 +962,7 @@ def b_objective(b, mu, x, nk=300):
     return out
 
 
-def load_data(model):
+def load_data(model, include_run=True):
     if model == 'Y10':
         df = (
             pd.read_csv('../outputs/combined/processed_scan_all.csv')
@@ -971,7 +977,13 @@ def load_data(model):
 
     y = df.loc[:, ['run', 'best_dose']]
 
-    return X, y
+    if not include_run:
+        X_out = X.drop('run', axis=1)
+        y_out = y.drop('run', axis=1)
+        return X_out, y_out
+
+    else:
+        return X, y
 
 
 def load_train_test_data(model):
@@ -984,3 +996,64 @@ def load_train_test_data(model):
     y_test = np.array(y.loc[lambda x: (x.run >= 8000)].drop('run', axis=1))
 
     return X_cv, y_cv, X_test, y_test
+
+
+class HyperparamsObj:
+    def __init__(self, X_in, y_in) -> None:
+        self.X = X_in
+        self.y = y_in
+
+    #
+    #
+
+    def __call__(self, trial):
+
+        params = self.get_params(trial)
+
+        score = get_model_cv_score(self.X, self.y, params)
+
+        return score
+
+    #
+    #
+
+    def get_params(self, trial):
+        params = {
+            "tree_method": "hist",
+            "max_depth": trial.suggest_int("max_depth", 3, 20),
+            "n_estimators": trial.suggest_int("n_estimators", 10, 2000, log=True),
+            "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.3, log=True),
+            "subsample": trial.suggest_float("subsample", 0.5, 1),
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.4, 1),
+        }
+        return params
+
+
+def get_model_cv_score(X, y, params):
+    rmse_list = []
+
+    kf = KFold(n_splits=5)
+
+    for train_ind, val_ind in tqdm(kf.split(X)):
+        # for train_ind, val_ind in kf.split(X):
+
+        X_tr = X.iloc[train_ind]
+        y_tr = y.iloc[train_ind]
+
+        X_v = X.iloc[val_ind]
+        y_v = y.iloc[val_ind]
+
+        y_tr = np.array(y_tr)
+        y_v = np.array(y_v)
+
+        model = XGBRegressor(**params).fit(X_tr, y_tr)
+
+        y_p = model.predict(X_v)
+
+        rmse = mean_squared_error(y_p, y_v, squared=False)
+
+        rmse_list.append(rmse)
+
+    score = sum(rmse_list)/len(rmse_list)
+
+    return score

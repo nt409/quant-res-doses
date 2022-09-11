@@ -14,6 +14,7 @@ dist/
 # *.ipynb
 
 notebooks/old
+.sh
 
 *.xlsx
 *.json

@@ -30,12 +30,6 @@ def main(model, seed):
     # optimise hyperparameters
     best_score, best_pars, best_number = run_optuna(X_cv, y_cv, seed)
 
-    # Save best pars
-    (
-        pd.DataFrame(best_pars, index=[0])
-        .to_csv(f'../outputs/hyperparams/{model}_{seed}.csv', index=False)
-    )
-
     # get train and test scores
     rmse_train, rmse_test, rmse_test_def = train_test_scores(
         best_pars,
@@ -44,6 +38,12 @@ def main(model, seed):
         X_test,
         y_test,
         # model,
+    )
+
+    # Save best pars
+    (
+        pd.DataFrame(best_pars, index=[0])
+        .to_csv(f'../outputs/hyperparams/{model}_{seed}.csv', index=False)
     )
 
     # Save scores
@@ -65,6 +65,7 @@ def main(model, seed):
 
 
 def run_optuna(X_cv, y_cv, seed):
+
     np.random.seed(seed)
 
     optuna.logging.set_verbosity(0)
@@ -75,8 +76,8 @@ def run_optuna(X_cv, y_cv, seed):
 
     study = optuna.create_study(sampler=sampler)
 
-    # study.optimize(obj, n_trials=40)
-    study.optimize(obj, n_trials=1)
+    study.optimize(obj, n_trials=40)
+    # study.optimize(obj, n_trials=1)
 
     best_pars = study.best_params
     best_value = study.best_value

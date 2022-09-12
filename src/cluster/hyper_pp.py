@@ -3,7 +3,7 @@
 import sys
 import pandas as pd
 
-N_ITS = 50
+N_ITS = 200
 
 
 def combine(model, folder):

@@ -1,7 +1,7 @@
 #!/bin/bash
 #! Make sure all the SBATCH directives go in this section and no other commands
 #! Name of the job:
-#SBATCH -J hyper_cumulative
+#SBATCH -J hyper_all
 #! Project name for Cunniffe group, use SL2 for paying queue:
 #SBATCH -A CUNNIFFE-SL3-CPU
 #! Output filename:
@@ -22,10 +22,10 @@
 #! Never request less than 5980mb of memory. 
 #! RAM is allocated in ~5980mb blocks, you are charged per block used, 
 #! and unused fractions of blocks will not be usable by others.
-#SBATCH --mem=9900mb
+#SBATCH --mem=20000mb
 #! Submit a job array with index values
 #! NOTE: This must be a range, not a single number (i.e. specifying '32' here would only run one job, with index 32). Here top number is x=n_p-1 (0-x is then n_p iterations)
-#SBATCH --array=0-199
+#SBATCH --array=0-33
 
 #! This is the partition name. This will request for a node with 6GB RAM for each task
 #SBATCH -p skylake,cclake,icelake
@@ -66,4 +66,4 @@ conda activate poly2_env
 #! The variable $SLURM_ARRAY_TASK_ID contains the array index for each job.
 #! In this example, each job will be passed its index
 
-python -m cluster.hyper cumulative $SLURM_ARRAY_TASK_ID
+python -m cluster.hyper_redo all $SLURM_ARRAY_TASK_ID

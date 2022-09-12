@@ -1,13 +1,12 @@
+import sys
+
 import shap
 from joblib import Memory
 import warnings
 
-from xgboost import XGBRegressor
-
-from poly2.utils import load_data, object_dump
+from poly2.utils import get_best_model, load_data, object_dump
 
 memory = Memory('../joblib_cache/', verbose=1)
-
 
 # ignore warning about Int64Index
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -19,33 +18,36 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 # @memory.cache
-def get_shap_values(X_in, y_in, filename):
+def get_shap_values(Xd, yd, model):
 
-    model = XGBRegressor()
-
-    model.load_model(filename)
+    best_model = get_best_model(model)
 
     print('fit')
 
-    model.fit(X_in, y_in)
+    best_model.fit(Xd, yd)
 
-    explainer = shap.TreeExplainer(model)
+    explainer = shap.TreeExplainer(best_model)
 
     print('get shap values')
 
-    shap_vals = explainer(X_in)
+    shap_vals = explainer(Xd)
 
     return shap_vals
 
 
 if __name__ == "__main__":
     # MODEL = 'all'
-    MODEL = 'Y10'
+    # MODEL = 'Y10'
     # MODEL = 'cumulative'
     # MODEL = 'asymp'
 
+    if len(sys.argv) != 2:
+        raise Exception("Supply one arguments: the model name")
+
+    MODEL = sys.argv[1]
+
     X, y = load_data(MODEL, include_run=False)
 
-    shap_values = get_shap_values(X, y, f'../outputs/xgb/{MODEL}.json')
+    shap_values = get_shap_values(X, y, MODEL)
 
     object_dump(shap_values, f'../outputs/SHAP/{MODEL}.pickle')

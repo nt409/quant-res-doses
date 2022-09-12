@@ -37,28 +37,26 @@ def main(model, seed):
         y_cv,
         X_test,
         y_test,
-        # model,
     )
 
-    # Save best pars
+    scores = pd.DataFrame(dict(
+        model=model,
+        default_cv_score=default_score,
+        best_cv_score=best_score,
+        rmse_test=rmse_test,
+        rmse_train=rmse_train,
+        rmse_test_def=rmse_test_def,
+        number=best_number,
+    ), index=[0]
+    )
+
+    # Save best pars with score
     (
-        pd.DataFrame(best_pars, index=[0])
+        pd.concat([
+            pd.DataFrame(best_pars, index=[0]),
+            scores
+        ], axis=1)
         .to_csv(f'../outputs/hyperparams/{model}_{seed}.csv', index=False)
-    )
-
-    # Save scores
-    (
-        pd.DataFrame(dict(
-            model=model,
-            default_cv_score=default_score,
-            best_cv_score=best_score,
-            rmse_test=rmse_test,
-            rmse_train=rmse_train,
-            rmse_test_def=rmse_test_def,
-            number=best_number,
-        ), index=[0]
-        )
-        .to_csv(f'../outputs/scores/{model}_{seed}.csv', index=False)
     )
 
     return None
@@ -79,9 +77,11 @@ def run_optuna(X_cv, y_cv, seed):
     study.optimize(obj, n_trials=40)
     # study.optimize(obj, n_trials=1)
 
-    best_pars = study.best_params
     best_value = study.best_value
+    best_pars = study.best_params
     best_number = study.best_trial.number
+
+    best_pars['tree_method'] == 'hist'
 
     return best_value, best_pars, best_number
 
@@ -92,7 +92,6 @@ def train_test_scores(
     y_train,
     X_test,
     y_test,
-    # model
 ):
 
     best_model = XGBRegressor(**best_pars).fit(X_train, y_train)
@@ -102,8 +101,6 @@ def train_test_scores(
 
     rmse_train = mean_squared_error(yp_train, y_train, squared=False)
     rmse_test = mean_squared_error(yp_test, y_test, squared=False)
-
-    # best_model.save_model(f'../outputs/xgb/{model}.json')
 
     default_model = XGBRegressor().fit(X_train, y_train)
 

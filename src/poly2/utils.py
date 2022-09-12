@@ -963,6 +963,23 @@ def b_objective(b, mu, x, nk=300):
 
 
 def load_data(model, include_run=True):
+    """Get cross val and train data
+
+    Parameters
+    ----------
+    model : str
+        - all
+        - asymp
+        - Y10
+        - cumulative
+
+    include_run : bool
+        - whether to include 'run' in output or not
+
+    Examples
+    --------
+    >>> X, y = load_data('all')
+    """
     if model == 'Y10':
         df = (
             pd.read_csv('../outputs/combined/processed_scan_all.csv')
@@ -987,6 +1004,20 @@ def load_data(model, include_run=True):
 
 
 def load_train_test_data(model):
+    """Get cross val and train data
+
+    Parameters
+    ----------
+    model : str
+        - all
+        - asymp
+        - Y10
+        - cumulative
+
+    Examples
+    --------
+    >>> X_cv, y_cv, X_test, y_test = load_train_test_data('all')
+    """
     X, y = load_data(model)
 
     X_cv = X.loc[lambda x: (x.run < 8000)].drop('run', axis=1)
@@ -1057,3 +1088,31 @@ def get_model_cv_score(X, y, params):
     score = sum(rmse_list)/len(rmse_list)
 
     return score
+
+
+def get_best_model(model):
+    best_params = get_best_params(model)
+
+    best_model = XGBRegressor(**best_params)
+
+    return best_model
+
+
+def get_best_params(model):
+    best_params = (
+        pd.read_csv(f'../outputs/hyperparams/best/{model}.csv')
+        .loc[:, [
+            'max_depth',
+            'n_estimators',
+            'learning_rate',
+            'subsample',
+            'colsample_bytree',
+        ]]
+        .iloc[0]
+        .to_dict()
+    )
+
+    best_params['n_estimators'] = int(best_params['n_estimators'])
+    best_params['max_depth'] = int(best_params['max_depth'])
+    best_params['tree_method'] = 'hist'
+    return best_params

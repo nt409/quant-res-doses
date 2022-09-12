@@ -31,5 +31,5 @@ if __name__ == "__main__":
 
     MODEL = sys.argv[1]
 
-    combine(MODEL, 'scores')
+    # combine(MODEL, 'scores')
     combine(MODEL, 'hyperparams')

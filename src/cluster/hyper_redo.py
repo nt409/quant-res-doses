@@ -124,6 +124,15 @@ if __name__ == "__main__":
         raise Exception("Supply two arguments: the model name and the seed")
 
     MODEL = sys.argv[1]
-    SEED = int(sys.argv[2])
+    # SEED = int(sys.argv[2])
+
+    # re-do failed runs:
+    index = int(sys.argv[2])
+    seeds = pd.read_csv(f'../outputs/todo/{MODEL}.csv')
+    SEED = int(
+        seeds
+        .iloc[index]
+        .indices
+    )
 
     main(MODEL, SEED)

@@ -25,7 +25,7 @@
 #SBATCH --mem=6600mb
 #! Submit a job array with index values
 #! NOTE: This must be a range, not a single number (i.e. specifying '32' here would only run one job, with index 32). Here top number is x=n_p-1 (0-x is then n_p iterations)
-#SBATCH --array=0-199
+#SBATCH --array=50-199
 
 #! This is the partition name. This will request for a node with 6GB RAM for each task
 #SBATCH -p skylake,cclake,icelake

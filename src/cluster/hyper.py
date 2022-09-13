@@ -74,14 +74,14 @@ def run_optuna(X_cv, y_cv, seed):
 
     study = optuna.create_study(sampler=sampler)
 
-    study.optimize(obj, n_trials=40)
-    # study.optimize(obj, n_trials=1)
+    # study.optimize(obj, n_trials=40)
+    study.optimize(obj, n_trials=1)
 
     best_value = study.best_value
     best_pars = study.best_params
     best_number = study.best_trial.number
 
-    best_pars['tree_method'] == 'hist'
+    best_pars['tree_method'] = 'hist'
 
     return best_value, best_pars, best_number
 

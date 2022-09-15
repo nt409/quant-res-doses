@@ -6,9 +6,6 @@ cost_per_spray_application,10,£/ha,,32.4 per spray + £10 per spray,https://bsp
 ,,,,,
 Host_growth_rate,0.0126,,,,"Hobbelen, Elderfield, etc"
 ,,,,,
-HOST_GROWTH_initial_area,0.012195121951219514,,,Value for below but never imported,
-NO_HOST_GROWTH_initial_area,0.95,,,Value for below but never imported,
-,,,,,
 Host_growth_initial_area,0.012195121951219514,,One actually used,0.05/4.1,"NB Elderfield used 4.2 not 4.1, dunno why??"
 ,,,,,
 T1,1456,degree days,,"Start as per van den berg, not Elderfield",

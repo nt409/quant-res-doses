@@ -1,13 +1,5 @@
 # Overview of notebooks
 
-## XGB Model creation:
-
-See `poly2.xgb_optimiser`.
-
-## SHAP Value Calculation:
-
-See `poly2.shap`.
-
 ## Figures:
 
 Main figures -- prefix `10*_*.ipynb`:
@@ -22,7 +14,7 @@ SHAP figures in `fig456`
 
 Appendix figs -- prefix `11*_*.ipynb`, e.g.:
 
-- `113_app_ps_b_effect.ipynb`
+- `113_app_dists.ipynb`
 
 ## Other:
 

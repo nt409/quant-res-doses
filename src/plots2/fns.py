@@ -2,28 +2,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from math import floor
 
-# from poly2.utils import edge_values, get_dist_mean, trait_vec
-
-# from plots2.consts import (
-#     GREY_LABEL,
-#     PLOT_HEIGHT,
-#     PLOT_WIDTH,
-# )
-
-
-def get_rows(top, row_gap, row_n):
-    rows = [top - i*row_gap for i in range(row_n)]
-    return rows
-
-
-def get_cols(left, col_gap, col_n):
-    cols = [left + i*col_gap for i in range(col_n)]
-    return cols
-
-
-# from .consts import GREY_LABEL
-# import matplotlib.pyplot as plt
-
 
 def get_corner_annotations(nx, ny, x0, y0, dx, dy, plt):
     letters = 'ABCDEFGHIJKLMNOP'

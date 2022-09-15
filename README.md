@@ -1,4 +1,4 @@
-# Polygenic 2
+# Quantitative resistance epidemiological and machine learning models
 
 This is code to accompany the paper: ['Coupling machine learning and epidemiological modelling to characterise optimal fungicide doses when fungicide resistance is partial or quantitative']().
 

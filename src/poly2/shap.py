@@ -44,10 +44,7 @@ def get_shap_values(Xd, yd, model):
 
 
 if __name__ == "__main__":
-    # MODEL = 'all'
-    # MODEL = 'Y10'
-    # MODEL = 'cumulative'
-    # MODEL = 'asymp'
+    # MODEL = 'all' / 'Y10' / 'cumulative' / 'asymp'
 
     if len(sys.argv) != 2:
         raise Exception("Supply one argument: the model name")

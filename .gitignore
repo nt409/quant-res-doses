@@ -1,8 +1,12 @@
 data/*
 figures/*
 outputs/*
+
 old/*
+old2/*
+
 */old/*
+*/old2/*
 
 *.egg-info/
 __pycache__/

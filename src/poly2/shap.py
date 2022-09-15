@@ -1,3 +1,11 @@
+"""Get SHAP values for each model
+
+Example
+-------
+conda activate poly2
+cd src
+python -m poly2.shap asymp
+"""
 import sys
 
 import shap
@@ -42,7 +50,7 @@ if __name__ == "__main__":
     # MODEL = 'asymp'
 
     if len(sys.argv) != 2:
-        raise Exception("Supply one arguments: the model name")
+        raise Exception("Supply one argument: the model name")
 
     MODEL = sys.argv[1]
 

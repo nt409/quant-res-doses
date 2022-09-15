@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
 from math import floor
 
 # from poly2.utils import edge_values, get_dist_mean, trait_vec
@@ -83,3 +85,10 @@ def get_corner_annotations_custom_labels(nx, ny, x0, y0, dx, dy, plt, labels):
         )
 
     return None
+
+
+def get_dose_colors(N=10):
+    clrmap = plt.cm.viridis_r
+    cmaplist = [clrmap(floor((i / (N-1))*clrmap.N)) for i in range(N)]
+    colors = sns.color_palette(cmaplist, n_colors=10)
+    return colors

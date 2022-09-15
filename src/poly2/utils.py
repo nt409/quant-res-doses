@@ -25,8 +25,8 @@ from sklearn.model_selection import KFold
 from tqdm import tqdm
 from xgboost import XGBRegressor
 
-from poly2.consts import DEFAULT_I0, FUNG_DECAY_RATE
 from poly2.params import PARAMS
+from poly2.consts import DEFAULT_I0, FUNG_DECAY_RATE
 
 
 def normalise(dist):
@@ -1093,6 +1093,8 @@ def get_model_cv_score(X, y, params):
 def get_best_model(model):
     best_params = get_best_params(model)
 
+    print(best_params)
+
     best_model = XGBRegressor(**best_params)
 
     return best_model
@@ -1107,6 +1109,7 @@ def get_best_params(model):
             'learning_rate',
             'subsample',
             'colsample_bytree',
+            'tree_method',
         ]]
         .iloc[0]
         .to_dict()
@@ -1114,5 +1117,43 @@ def get_best_params(model):
 
     best_params['n_estimators'] = int(best_params['n_estimators'])
     best_params['max_depth'] = int(best_params['max_depth'])
-    best_params['tree_method'] = 'hist'
+
     return best_params
+
+
+def get_best_dose_for_cb(line_df, y_val, eps=0.1):
+    """get best dose df for colorbar
+
+    Parameters
+    ----------
+    line_df : pd.DataFrame
+        output of get_data_from_pars (poly2.run)
+    yy : float
+        -
+
+    Returns
+    -------
+    out : pd.DataFrame
+        -
+    """
+    best_dose = (
+        line_df
+        .reset_index(drop=True)
+        .loc[lambda x: x.year > 0]
+        .groupby('year')
+        .apply(lambda x: x.loc[x.yld.idxmax()])
+        .assign(yy=y_val)
+        .reset_index(drop=True)
+        .loc[:, ['dose', 'year', 'yy']]
+    )
+
+    out = (
+        pd.concat([
+            best_dose.assign(year=lambda x: x.year - eps),
+            best_dose.assign(year=lambda x: x.year + eps),
+        ])
+        .drop_duplicates()
+        .sort_values('year')
+    )
+
+    return out

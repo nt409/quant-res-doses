@@ -2,7 +2,7 @@
 
 This is code to accompany the paper: ['Coupling machine learning and epidemiological modelling to characterise optimal fungicide doses when fungicide resistance is partial or quantitative']().
 
-The basic model is very similar to that found in [this repository](github.com/nt409/quantitative-resistance), as described in ['Modelling quantitative fungicide resistance and breakdown of resistant cultivars: designing integrated disease management strategies for Septoria of winter wheat'](biorxiv.org/content/10.1101/2022.08.10.503500v1.full).
+The basic model is very similar to that found in [this repository](github.com/nt409/quantitative-resistance), as described in the first paper ['Modelling quantitative fungicide resistance and breakdown of resistant cultivars: designing integrated disease management strategies for Septoria of winter wheat'](biorxiv.org/content/10.1101/2022.08.10.503500v1.full).
 
 It is a model of quantitative fungicide resistance, parameterised for septoria of winter wheat. The model is fitted to field data.
 
@@ -22,7 +22,10 @@ The most important file in this folder is `simulator.py`, which contains the cla
 
 ### Scans
 
-We ran two larger ensemble runs where the mutation and fungicide paramters between runs. The code that generated the outputs of the scans is found in `src/cluster`. We ran two scans - one each for partial resistance Type 1 (`src/cluster/scan_all.submit`) and Type 2 (`src/cluster/scan_asymp.submit`).
+We ran two larger ensemble runs where the mutation and fungicide paramters between runs. The code that generated the outputs of the scans is found in `src/cluster`. We ran two scans:
+
+- `src/cluster/scan_all.submit` (for partial resistance Type 2);
+- `src/cluster/scan_asymp.submit` (for partial resistance Type 1).
 
 ### Gradient-boosted trees models
 

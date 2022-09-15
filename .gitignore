@@ -10,6 +10,8 @@ old2/*
 
 cluster_advice.md
 *.code-workspace
+*.toml
+*.cfg
 
 *.egg-info/
 __pycache__/

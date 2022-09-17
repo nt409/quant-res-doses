@@ -68,5 +68,5 @@ def get_corner_annotations_custom_labels(nx, ny, x0, y0, dx, dy, plt, labels):
 def get_dose_colors(N=10):
     clrmap = plt.cm.viridis_r
     cmaplist = [clrmap(floor((i / (N-1))*clrmap.N)) for i in range(N)]
-    colors = sns.color_palette(cmaplist, n_colors=10)
+    colors = sns.color_palette(cmaplist, n_colors=N)
     return colors

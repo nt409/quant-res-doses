@@ -1,4 +1,4 @@
-data/*
+# data/*
 figures/*
 outputs/*
 
@@ -7,6 +7,8 @@ old2/*
 
 */old/*
 */old2/*
+old3/*
+*/old3/*
 
 cluster_advice.md
 *.code-workspace

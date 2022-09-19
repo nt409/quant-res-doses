@@ -12,7 +12,7 @@ The default model parameter values are found in `data`.
 
 ## Code
 
-### Scans
+### Model
 
 The model is implemented in python.
 

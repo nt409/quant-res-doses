@@ -1,8 +1,10 @@
 # Quantitative resistance epidemiological and machine learning models
 
-This is code to accompany the paper: ['Coupling machine learning and epidemiological modelling to characterise optimal fungicide doses when fungicide resistance is partial or quantitative']().
+This is code to accompany the paper: ['Coupling machine learning and epidemiological modelling to characterise optimal fungicide doses when fungicide resistance is partial or quantitative'](https://www.biorxiv.org/content/10.1101/2022.09.17.508365v1).
 
-The basic model is very similar to that found in [this repository](github.com/nt409/quantitative-resistance), as described in the first paper ['Modelling quantitative fungicide resistance and breakdown of resistant cultivars: designing integrated disease management strategies for Septoria of winter wheat'](biorxiv.org/content/10.1101/2022.08.10.503500v1.full).
+
+
+The basic model is very similar to that found in [this repository](https://github.com/nt409/quantitative-resistance), as described in the first paper ['Modelling quantitative fungicide resistance and breakdown of resistant cultivars: designing integrated disease management strategies for Septoria of winter wheat'](https://www.biorxiv.org/content/10.1101/2022.08.10.503500v1.full).
 
 It is a model of quantitative fungicide resistance, parameterised for septoria of winter wheat. The model is fitted to field data.
 

@@ -4,7 +4,7 @@ from math import floor
 
 
 def get_corner_annotations(nx, ny, x0, y0, dx, dy, plt):
-    letters = 'ABCDEFGHIJKLMNOP'
+    letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
     for ii in range(nx*ny):
         ll = letters[ii]
@@ -24,7 +24,7 @@ def get_corner_annotations(nx, ny, x0, y0, dx, dy, plt):
 
 
 def get_corner_annotations_explicit(nx, ny, xs, ys, plt):
-    letters = 'ABCDEFGHIJKLMNOP'
+    letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
     for ii in range(nx*ny):
         ll = letters[ii]
